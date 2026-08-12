@@ -190,6 +190,16 @@
   .book-meta{ margin-top:0.6rem; }
   .book-meta .num{ color:var(--twilight); font-size:0.78rem; }
   .book-meta .t{ font-size:0.86rem; font-weight:500; line-height:1.25; margin-top:0.1rem; }
+  .download-btn{
+    display:block; width:100%; margin-top:0.55rem;
+    background:var(--twilight); color:var(--parchment);
+    border:none; border-radius:6px;
+    font-family:'Jost', sans-serif; font-size:0.76rem; letter-spacing:0.03em;
+    padding:0.45rem 0.4rem; text-align:center;
+    text-decoration:none; cursor:pointer;
+    transition:background .2s;
+  }
+  .download-btn:hover{ background:var(--starlight); color:var(--night-deep); }
 
   /* ---------- Modal ---------- */
   .modal-backdrop{
@@ -319,7 +329,7 @@ const MOCK_BOOKS = [
    pages:623, isbn:'978-1649374073', published:'2023', coverColor:'linear-gradient(160deg,#4f2f82,#241542)', read:true},
   {id:'9', title:'The Ashfall Vow', author:'Rin Cavell', tab:'ARC', series:'The Hollow Vow', seriesOrder:1, genre:'Romantasy',
    synopsis:'A debt sworn to a dying god comes due, and the only way to pay it is a marriage no one — least of all the bride — ever wanted.',
-   pages:372, isbn:'', published:'2025', coverColor:'linear-gradient(160deg,#4a2a5c,#1e1129)', read:false},
+   pages:372, isbn:'', published:'2025', coverColor:'linear-gradient(160deg,#4a2a5c,#1e1129)', downloadURL:'#', read:false},
   {id:'10', title:'Salt for the Undertow', author:'Marin Osei', tab:'ARC', series:'Standalone', seriesOrder:1, genre:'Mystery',
    synopsis:'A coastal town keeps its secrets buried in sand — until a body surfaces that shouldn\'t exist, and a detective who left ten years ago has to come home to bury it again.',
    pages:298, isbn:'', published:'2024', coverColor:'linear-gradient(160deg,#7551ab,#38215e)', read:false},
@@ -372,6 +382,7 @@ function renderBookCard(book){
         <div class="num">Book ${book.seriesOrder}</div>
         <div class="t">${book.title}</div>
       </div>
+      ${book.downloadURL ? `<a class="download-btn" href="${book.downloadURL}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Download</a>` : ''}
     </div>`;
 }
 
