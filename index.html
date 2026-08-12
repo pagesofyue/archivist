@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Archivist — A Reading Library</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Cinzel:wght@500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2b1c45;
+    --night:#3a2560;
+    --night-deep:#221536;
+    --twilight:#7a56b8;
+    --mist:#cbb8ea;
+    --starlight:#a679dd;
+    --starlight-soft:#dcc8f2;
+    --parchment:#faf8fd;
+    --parchment-dim:#f1e9fa;
+    --rose:#b48fd6;
+    --line: rgba(58,37,96,0.1);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--parchment);
+    color:var(--ink);
+    font-family:'Jost', sans-serif;
+    font-weight:400;
+  }
+  h1,h2,h3,.display{
+    font-family:'Cormorant Garamond', serif;
+  }
+  .eyebrow{
+    font-family:'Cinzel', serif;
+    font-size:0.72rem;
+    letter-spacing:0.22em;
+    text-transform:uppercase;
+    color:var(--twilight);
+  }
+
+  /* ---------- Hero ---------- */
+  .hero{
+    position:relative;
+    height:56vh;
+    min-height:380px;
+    background:
+      radial-gradient(ellipse at 20% 10%, rgba(166,121,221,0.18), transparent 45%),
+      linear-gradient(180deg, var(--night-deep) 0%, var(--night) 55%, #4a2f7a 100%);
+    overflow:hidden;
+    display:flex;
+    flex-direction:column;
+    justify-content:flex-end;
+  }
+  .hero .stars{position:absolute; inset:0;}
+  .hero .stars span{
+    position:absolute;
+    width:2px;height:2px;
+    background:var(--starlight-soft);
+    border-radius:50%;
+    opacity:0.7;
+    animation:twinkle 3.5s ease-in-out infinite;
+  }
+  @keyframes twinkle{ 0%,100%{opacity:.2;} 50%{opacity:1;} }
+  .hero .skyline{
+    position:absolute; bottom:0; left:0; right:0;
+    height:45%;
+    background:linear-gradient(180deg, transparent, rgba(22,17,41,0.9) 85%);
+  }
+  .hero-content{
+    position:relative;
+    z-index:2;
+    padding:0 6vw 3.2rem;
+    color:var(--parchment);
+  }
+  .hero .eyebrow{color:var(--starlight); margin-bottom:0.6rem; display:block;}
+  .hero h1{
+    margin:0;
+    font-size:clamp(2.4rem, 6vw, 4.4rem);
+    font-weight:500;
+    letter-spacing:0.01em;
+  }
+  .hero p{
+    margin:0.5rem 0 0;
+    color:var(--mist);
+    font-size:1.05rem;
+    max-width:32em;
+  }
+
+  /* ---------- Nav ---------- */
+  nav{
+    position:sticky; top:0; z-index:50;
+    background:rgba(22,17,41,0.92);
+    backdrop-filter:blur(6px);
+    border-bottom:1px solid rgba(166,121,221,0.18);
+  }
+  .nav-inner{
+    max-width:1200px; margin:0 auto;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:0.9rem 6vw;
+  }
+  .brand{
+    font-family:'Cinzel', serif;
+    color:var(--starlight);
+    font-size:0.95rem;
+    letter-spacing:0.14em;
+    text-decoration:none;
+  }
+  .nav-links{ display:flex; gap:2.2rem; align-items:center; }
+  .nav-item{ position:relative; }
+  .nav-item > button{
+    background:none; border:none; cursor:pointer;
+    font-family:'Jost', sans-serif;
+    color:var(--parchment);
+    font-size:0.92rem; letter-spacing:0.04em;
+    padding:0.4rem 0; display:flex; align-items:center; gap:0.35rem;
+  }
+  .nav-item > button:hover{ color:var(--starlight); }
+  .caret{ font-size:0.65rem; transition:transform .2s; opacity:0.7; }
+  .nav-item.open .caret{ transform:rotate(180deg); }
+  .dropdown{
+    position:absolute; top:100%; left:50%; transform:translateX(-50%);
+    background:var(--night);
+    border:1px solid rgba(166,121,221,0.25);
+    border-radius:10px;
+    min-width:220px;
+    padding:0.5rem;
+    margin-top:0.7rem;
+    display:none;
+    box-shadow:0 20px 40px rgba(0,0,0,0.35);
+    max-height:60vh; overflow-y:auto;
+  }
+  .nav-item.open .dropdown{ display:block; }
+  .dropdown a{
+    display:block; color:var(--mist); text-decoration:none;
+    font-size:0.88rem; padding:0.5rem 0.7rem; border-radius:6px;
+  }
+  .dropdown a:hover{ background:rgba(166,121,221,0.14); color:var(--starlight-soft); }
+
+  /* ---------- Content ---------- */
+  main{ max-width:1200px; margin:0 auto; padding:3rem 6vw 6rem; }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  .author-block{ margin-bottom:3.5rem; }
+  .author-block h2{
+    font-size:2.1rem; font-weight:500; margin:0 0 1.6rem;
+    padding-bottom:0.8rem; border-bottom:1px solid var(--line);
+  }
+  .series-block{ margin-bottom:2.4rem; }
+  .series-block .eyebrow{
+    display:flex; align-items:center; gap:0.8rem; margin-bottom:1rem;
+  }
+  .series-block .eyebrow::after{
+    content:''; flex:1; height:1px; background:var(--line);
+  }
+
+  .book-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));
+    gap:1.6rem 1.3rem;
+  }
+  .book-card{ cursor:pointer; text-align:left; }
+  .cover{
+    aspect-ratio:2/3;
+    border-radius:4px;
+    position:relative;
+    display:flex; align-items:flex-end;
+    padding:0.9rem;
+    color:var(--parchment);
+    box-shadow:0 8px 20px rgba(33,28,54,0.18);
+    transition:transform .25s ease, box-shadow .25s ease;
+    overflow:hidden;
+  }
+  .cover::before{
+    content:''; position:absolute; inset:0;
+    background:radial-gradient(circle at 30% 20%, rgba(255,255,255,0.18), transparent 55%);
+  }
+  .book-card:hover .cover{ transform:translateY(-6px); box-shadow:0 16px 30px rgba(33,28,54,0.28); }
+  .cover .title{ font-family:'Cormorant Garamond', serif; font-weight:600; font-size:1.05rem; line-height:1.15; position:relative; z-index:1;}
+  .read-badge{
+    position:absolute; top:0.6rem; right:0.6rem;
+    width:22px; height:22px; border-radius:50%;
+    background:var(--starlight); color:var(--night);
+    display:none; align-items:center; justify-content:center;
+    font-size:0.75rem; z-index:2;
+  }
+  .book-card.is-read .read-badge{ display:flex; }
+  .book-meta{ margin-top:0.6rem; }
+  .book-meta .num{ color:var(--twilight); font-size:0.78rem; }
+  .book-meta .t{ font-size:0.86rem; font-weight:500; line-height:1.25; margin-top:0.1rem; }
+
+  /* ---------- Modal ---------- */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(22,17,41,0.55);
+    backdrop-filter:blur(3px);
+    display:none; align-items:center; justify-content:center;
+    z-index:100; padding:2rem;
+  }
+  .modal-backdrop.open{ display:flex; }
+  .modal{
+    background:var(--parchment);
+    border-radius:14px;
+    max-width:760px; width:100%;
+    max-height:85vh; overflow-y:auto;
+    display:grid; grid-template-columns:220px 1fr;
+    box-shadow:0 30px 60px rgba(0,0,0,0.4);
+  }
+  @media (max-width:640px){ .modal{ grid-template-columns:1fr; } }
+  .modal-cover{
+    display:flex; align-items:flex-end; padding:1.4rem;
+    color:var(--parchment); position:relative; overflow:hidden;
+  }
+  .modal-cover::before{ content:''; position:absolute; inset:0; background:radial-gradient(circle at 30% 15%, rgba(255,255,255,0.2), transparent 55%); }
+  .modal-cover .title{ font-family:'Cormorant Garamond', serif; font-size:1.6rem; font-weight:600; position:relative; z-index:1; }
+  .modal-body{ padding:1.8rem 2rem; position:relative; }
+  .modal-close{
+    position:absolute; top:1rem; right:1.2rem;
+    background:none; border:none; font-size:1.3rem; cursor:pointer; color:var(--twilight);
+  }
+  .modal-body .series-tag{ font-size:0.8rem; color:var(--twilight); margin-bottom:0.3rem; }
+  .modal-body h3{ margin:0 0 0.2rem; font-size:1.7rem; font-weight:600; }
+  .modal-body .author-tag{ color:var(--twilight); font-size:0.92rem; margin-bottom:1rem; }
+  .modal-body .synopsis{ font-size:0.95rem; line-height:1.65; color:#443b63; margin-bottom:1.3rem; }
+  .meta-grid{
+    display:grid; grid-template-columns:1fr 1fr; gap:0.7rem 1.2rem;
+    font-size:0.85rem; margin-bottom:1.4rem;
+  }
+  .meta-grid div span{ display:block; }
+  .meta-grid .label{ color:var(--twilight); font-size:0.72rem; letter-spacing:0.06em; text-transform:uppercase; }
+  .read-toggle{
+    display:flex; align-items:center; gap:0.6rem;
+    font-size:0.92rem; cursor:pointer; user-select:none;
+    border-top:1px solid var(--line); padding-top:1.2rem;
+  }
+  .read-toggle input{ width:18px; height:18px; accent-color:var(--twilight); cursor:pointer; }
+
+  .empty{ color:var(--twilight); font-style:italic; padding:2rem 0; }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-inner">
+    <a href="#" class="brand" onclick="showTab('home');return false;">THE ARCHIVIST</a>
+    <div class="nav-links">
+      <div class="nav-item"><button onclick="showTab('home');return false;">Home</button></div>
+      <div class="nav-item" id="nav-backlist">
+        <button onclick="toggleDropdown('nav-backlist')">Backlist <span class="caret">▾</span></button>
+        <div class="dropdown" id="dd-backlist"></div>
+      </div>
+      <div class="nav-item" id="nav-arc">
+        <button onclick="toggleDropdown('nav-arc')">ARC <span class="caret">▾</span></button>
+        <div class="dropdown" id="dd-arc"></div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="hero">
+  <div class="stars" id="stars"></div>
+  <div class="skyline"></div>
+  <div class="hero-content">
+    <span class="eyebrow">A Private Collection</span>
+    <h1>The Archivist</h1>
+    <p>Every book I've read and every book I'm about to — trad-published favorites shelved in the Backlist, indie gems shelved in ARC.</p>
+  </div>
+</div>
+
+<main>
+  <div class="tab-panel active" id="tab-home"></div>
+  <div class="tab-panel" id="tab-backlist"></div>
+  <div class="tab-panel" id="tab-arc"></div>
+</main>
+
+<div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this) closeModal()">
+  <div class="modal" id="modalContent"></div>
+</div>
+
+<script>
+/* ============================================================
+   DATA LAYER
+   Replace loadBooks() with a fetch() to your Apps Script Web App:
+
+   async function loadBooks(){
+     const res = await fetch('YOUR_APPS_SCRIPT_URL?action=list');
+     return await res.json();
+   }
+
+   The mock data below matches the exact shape the script expects,
+   so swapping it in is a one-line change. See SETUP.md.
+   ============================================================ */
+
+const MOCK_BOOKS = [
+  {id:'1', title:'A Court of Thorns and Roses', author:'Sarah J. Maas', tab:'Backlist', series:'A Court of Thorns and Roses', seriesOrder:1, genre:'Romantasy',
+   synopsis:'A huntress is dragged into a faerie court after killing a wolf in the woods, and finds herself bound by an ancient bargain that will upend everything she thought she knew.',
+   pages:419, isbn:'978-1619634442', published:'2015', coverColor:'linear-gradient(160deg,#6b3f5e,#2c1f3d)', read:true},
+  {id:'2', title:'A Court of Mist and Fury', author:'Sarah J. Maas', tab:'Backlist', series:'A Court of Thorns and Roses', seriesOrder:2, genre:'Romantasy',
+   synopsis:'Recovering from the trials of the Spring Court, our heroine strikes a new bargain that pulls her into the heart of the Night Court and a war she never saw coming.',
+   pages:624, isbn:'978-1635575569', published:'2016', coverColor:'linear-gradient(160deg,#3d2a56,#1c1533)', read:true},
+  {id:'3', title:'A Court of Wings and Ruin', author:'Sarah J. Maas', tab:'Backlist', series:'A Court of Thorns and Roses', seriesOrder:3, genre:'Romantasy',
+   synopsis:'With the courts fractured and an ancient enemy massing at the border, old loyalties are tested and new alliances are forged in a war for the fate of every court.',
+   pages:699, isbn:'978-1635575583', published:'2017', coverColor:'linear-gradient(160deg,#4b2d70,#241540)', read:false},
+  {id:'4', title:'Throne of Glass', author:'Sarah J. Maas', tab:'Backlist', series:'Throne of Glass', seriesOrder:1, genre:'Fantasy',
+   synopsis:'An assassin is pulled from a labor camp to compete for her freedom in a brutal tournament, only to find something far darker stalking the halls of the glass castle.',
+   pages:404, isbn:'978-1619630345', published:'2012', coverColor:'linear-gradient(160deg,#5c3a8a,#2a1750)', read:true},
+  {id:'5', title:'Crown of Midnight', author:'Sarah J. Maas', tab:'Backlist', series:'Throne of Glass', seriesOrder:2, genre:'Fantasy',
+   synopsis:'Now the King\\'s Champion, she must carry out his brutal orders while secretly working against him — a game that grows more dangerous with every kill.',
+   pages:418, isbn:'978-1619636047', published:'2013', coverColor:'linear-gradient(160deg,#7a4fae,#3a2266)', read:false},
+  {id:'6', title:'House of Earth and Blood', author:'Sarah J. Maas', tab:'Backlist', series:'Crescent City', seriesOrder:1, genre:'Fantasy',
+   synopsis:'A half-fae party girl and a fallen angel form an uneasy alliance to hunt the demon that murdered her best friend, in a city of gods, mobsters, and magic.',
+   pages:803, isbn:'978-1635574043', published:'2020', coverColor:'linear-gradient(160deg,#9163c9,#4a2d78)', read:false},
+  {id:'7', title:'Fourth Wing', author:'Rebecca Yarros', tab:'Backlist', series:'The Empyrean', seriesOrder:1, genre:'Romantasy',
+   synopsis:'Ordered into the deadliest wing of dragon riders despite a body that betrays her at every turn, she must survive both the war college and the dragons themselves.',
+   pages:517, isbn:'978-1649374042', published:'2023', coverColor:'linear-gradient(160deg,#63409e,#2e1a52)', read:true},
+  {id:'8', title:'Iron Flame', author:'Rebecca Yarros', tab:'Backlist', series:'The Empyrean', seriesOrder:2, genre:'Romantasy',
+   synopsis:'With new rules, new rivals, and a rebellion brewing in the shadows, survival now means learning who to trust — starting with herself.',
+   pages:623, isbn:'978-1649374073', published:'2023', coverColor:'linear-gradient(160deg,#4f2f82,#241542)', read:true},
+  {id:'9', title:'The Ashfall Vow', author:'Rin Cavell', tab:'ARC', series:'The Hollow Vow', seriesOrder:1, genre:'Romantasy',
+   synopsis:'A debt sworn to a dying god comes due, and the only way to pay it is a marriage no one — least of all the bride — ever wanted.',
+   pages:372, isbn:'', published:'2025', coverColor:'linear-gradient(160deg,#4a2a5c,#1e1129)', read:false},
+  {id:'10', title:'Salt for the Undertow', author:'Marin Osei', tab:'ARC', series:'Standalone', seriesOrder:1, genre:'Mystery',
+   synopsis:'A coastal town keeps its secrets buried in sand — until a body surfaces that shouldn\\'t exist, and a detective who left ten years ago has to come home to bury it again.',
+   pages:298, isbn:'', published:'2024', coverColor:'linear-gradient(160deg,#7551ab,#38215e)', read:false},
+];
+
+async function loadBooks(){
+  // Swap this for a real fetch() once your Apps Script is deployed.
+  return JSON.parse(JSON.stringify(MOCK_BOOKS));
+}
+
+/* ============================================================
+   APP LOGIC
+   ============================================================ */
+let BOOKS = [];
+
+function seededStars(n){
+  const wrap = document.getElementById('stars');
+  let out = '';
+  for(let i=0;i<n;i++){
+    const top = Math.random()*70;
+    const left = Math.random()*100;
+    const delay = (Math.random()*3.5).toFixed(2);
+    out += `<span style="top:${top}%;left:${left}%;animation-delay:${delay}s"></span>`;
+  }
+  wrap.innerHTML = out;
+}
+
+function groupBy(list, key){
+  return list.reduce((acc, item) => {
+    (acc[item[key]] = acc[item[key]] || []).push(item);
+    return acc;
+  }, {});
+}
+
+function renderBookCard(book){
+  return `
+    <div class="book-card ${book.read ? 'is-read':''}" onclick="openModal('${book.id}')">
+      <div class="cover" style="background:${book.coverColor}">
+        <div class="read-badge">✓</div>
+        <div class="title">${book.title}</div>
+      </div>
+      <div class="book-meta">
+        <div class="num">Book ${book.seriesOrder}</div>
+        <div class="t">${book.title}</div>
+      </div>
+    </div>`;
+}
+
+function renderAuthorSection(author, books){
+  const bySeries = groupBy(books, 'series');
+  const seriesHtml = Object.keys(bySeries).map(seriesName => {
+    const books = bySeries[seriesName].sort((a,b)=>a.seriesOrder-b.seriesOrder);
+    return `
+      <div class="series-block">
+        <div class="eyebrow">${seriesName}</div>
+        <div class="book-grid">${books.map(renderBookCard).join('')}</div>
+      </div>`;
+  }).join('');
+  return `<div class="author-block"><h2>${author}</h2>${seriesHtml}</div>`;
+}
+
+function renderTab(panelId, books){
+  const panel = document.getElementById(panelId);
+  if(!books.length){ panel.innerHTML = '<div class="empty">No books here yet.</div>'; return; }
+  const byAuthor = groupBy(books, 'author');
+  panel.innerHTML = Object.keys(byAuthor).sort().map(author => renderAuthorSection(author, byAuthor[author])).join('');
+}
+
+function renderDropdown(ddId, books){
+  const authors = [...new Set(books.map(b=>b.author))].sort();
+  document.getElementById(ddId).innerHTML = authors.map(a =>
+    `<a href="#" onclick="jumpToAuthor('${a.replace(/'/g,"\\'")}');return false;">${a}</a>`
+  ).join('');
+}
+
+function jumpToAuthor(author){
+  const tab = BOOKS.find(b=>b.author===author).tab.toLowerCase();
+  showTab(tab);
+  closeAllDropdowns();
+  setTimeout(()=>{
+    const heading = [...document.querySelectorAll('.author-block h2')].find(h=>h.textContent===author);
+    if(heading) heading.scrollIntoView({behavior:'smooth', block:'start'});
+  }, 50);
+}
+
+function showTab(name){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  window.scrollTo({top: document.querySelector('nav').offsetHeight, behavior:'smooth'});
+}
+
+function toggleDropdown(id){
+  const isOpen = document.getElementById(id).classList.contains('open');
+  closeAllDropdowns();
+  if(!isOpen) document.getElementById(id).classList.add('open');
+}
+function closeAllDropdowns(){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('open'));
+}
+document.addEventListener('click', (e)=>{
+  if(!e.target.closest('.nav-item')) closeAllDropdowns();
+});
+
+function openModal(id){
+  const book = BOOKS.find(b=>b.id===id);
+  const m = document.getElementById('modalContent');
+  m.innerHTML = `
+    <div class="modal-cover" style="background:${book.coverColor}">
+      <div class="title">${book.title}</div>
+    </div>
+    <div class="modal-body">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div class="series-tag">${book.series} · Book ${book.seriesOrder}</div>
+      <h3>${book.title}</h3>
+      <div class="author-tag">${book.author}</div>
+      <div class="synopsis">${book.synopsis}</div>
+      <div class="meta-grid">
+        <div><span class="label">Genre</span><span>${book.genre || '—'}</span></div>
+        <div><span class="label">Pages</span><span>${book.pages || '—'}</span></div>
+        <div><span class="label">Published</span><span>${book.published || '—'}</span></div>
+        <div><span class="label">ISBN/ASIN</span><span>${book.isbn || '—'}</span></div>
+        <div><span class="label">Shelf</span><span>${book.tab}</span></div>
+      </div>
+      <label class="read-toggle">
+        <input type="checkbox" ${book.read ? 'checked':''} onchange="toggleRead('${book.id}', this.checked)">
+        I've read this
+      </label>
+    </div>`;
+  document.getElementById('modalBackdrop').classList.add('open');
+}
+function closeModal(){ document.getElementById('modalBackdrop').classList.remove('open'); }
+
+async function toggleRead(id, value){
+  const book = BOOKS.find(b=>b.id===id);
+  book.read = value;
+  // Wire this to your Apps Script to persist the change:
+  // await fetch(`YOUR_APPS_SCRIPT_URL?action=markRead&id=${id}&read=${value}`);
+  refreshAll();
+}
+
+function refreshAll(){
+  const backlistBooks = BOOKS.filter(b=>b.tab==='Backlist');
+  const arcBooks = BOOKS.filter(b=>b.tab==='ARC');
+  renderTab('tab-home', BOOKS);
+  renderTab('tab-backlist', backlistBooks);
+  renderTab('tab-arc', arcBooks);
+  renderDropdown('dd-backlist', backlistBooks);
+  renderDropdown('dd-arc', arcBooks);
+}
+
+(async function init(){
+  seededStars(22);
+  BOOKS = await loadBooks();
+  refreshAll();
+})();
+</script>
+</body>
+</html>
