@@ -354,12 +354,19 @@ function groupBy(list, key){
   }, {});
 }
 
+function coverStyle(book){
+  if(book.coverURL){
+    return `background-image:url('${book.coverURL}'); background-size:cover; background-position:center;`;
+  }
+  return `background:${book.coverColor};`;
+}
+
 function renderBookCard(book){
   return `
     <div class="book-card ${book.read ? 'is-read':''}" onclick="openModal('${book.id}')">
-      <div class="cover" style="background:${book.coverColor}">
+      <div class="cover" style="${coverStyle(book)}">
         <div class="read-badge">✓</div>
-        <div class="title">${book.title}</div>
+        ${book.coverURL ? '' : `<div class="title">${book.title}</div>`}
       </div>
       <div class="book-meta">
         <div class="num">Book ${book.seriesOrder}</div>
@@ -427,8 +434,8 @@ function openModal(id){
   const book = BOOKS.find(b=>b.id===id);
   const m = document.getElementById('modalContent');
   m.innerHTML = `
-    <div class="modal-cover" style="background:${book.coverColor}">
-      <div class="title">${book.title}</div>
+    <div class="modal-cover" style="${coverStyle(book)}">
+      ${book.coverURL ? '' : `<div class="title">${book.title}</div>`}
     </div>
     <div class="modal-body">
       <button class="modal-close" onclick="closeModal()">✕</button>
