@@ -326,8 +326,8 @@ const MOCK_BOOKS = [
 ];
 
 async function loadBooks(){
-  // Swap this for a real fetch() once your Apps Script is deployed.
-  return JSON.parse(JSON.stringify(MOCK_BOOKS));
+  const res = await fetch('https://script.google.com/macros/s/AKfycbyQJTtjIIT9uw05c6Qev1_YL5XFMQKqAYth2WWdZU2dCY3VFbOHR3qNadhrSeRWr4u1DA/exec?action=list');
+  return await res.json();
 }
 
 /* ============================================================
@@ -455,8 +455,7 @@ function closeModal(){ document.getElementById('modalBackdrop').classList.remove
 async function toggleRead(id, value){
   const book = BOOKS.find(b=>b.id===id);
   book.read = value;
-  // Wire this to your Apps Script to persist the change:
-  // await fetch(`YOUR_APPS_SCRIPT_URL?action=markRead&id=${id}&read=${value}`);
+  await fetch(`https://script.google.com/macros/s/AKfycbyQJTtjIIT9uw05c6Qev1_YL5XFMQKqAYth2WWdZU2dCY3VFbOHR3qNadhrSeRWr4u1DA/exec?action=markRead&id=${id}&read=${value}`);
   refreshAll();
 }
 
