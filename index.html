@@ -6,6 +6,7 @@
 <title>The Archivist — A Reading Library</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=Cinzel:wght@500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
   :root{
     --ink:#2b1c45;
@@ -402,9 +403,47 @@ const MOCK_BOOKS = [
    pages:298, isbn:'', published:'2024', coverColor:'linear-gradient(160deg,#7551ab,#38215e)', read:false},
 ];
 
+/* ============================================================
+   DATA LAYER
+   Reads are served from the Sheet's "Publish to web" CSV export —
+   this is static/cached on Google's end, so it loads far faster
+   than Apps Script (no cold-start). Writes (the read checkbox)
+   still go through Apps Script, since publish-to-web is read-only.
+   ============================================================ */
+
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2flRDEAI3FPBAfsUlDJ2VYpxeYs-Yug9IoONZT7mEN8RvAupHNvqcIOk7auRuISIF5XKhm8EhFM2-/pub?gid=0&single=true&output=csv';
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQJTtjIIT9uw05c6Qev1_YL5XFMQKqAYth2WWdZU2dCY3VFbOHR3qNadhrSeRWr4u1DA/exec';
+
+function normalizeTab(value){
+  const v = String(value || '').trim().toLowerCase();
+  if(v === 'arc') return 'ARC';
+  if(v === 'backlist') return 'Backlist';
+  return value;
+}
+
 async function loadBooks(){
-  const res = await fetch('https://script.google.com/macros/s/AKfycbyQJTtjIIT9uw05c6Qev1_YL5XFMQKqAYth2WWdZU2dCY3VFbOHR3qNadhrSeRWr4u1DA/exec?action=list');
-  return await res.json();
+  const res = await fetch(CSV_URL);
+  const text = await res.text();
+  const parsed = Papa.parse(text, { header:true, skipEmptyLines:true });
+  return parsed.data
+    .filter(row => row.ID)
+    .map(row => ({
+      id: String(row.ID),
+      title: row.Title,
+      author: row.Author,
+      tab: normalizeTab(row.Tab),
+      series: row.Series,
+      seriesOrder: Number(row.SeriesOrder) || 1,
+      genre: row.Genre,
+      synopsis: row.Synopsis,
+      pages: row.Pages,
+      isbn: row['ISBN/ASIN'],
+      published: row.Published,
+      coverColor: 'linear-gradient(160deg,#6b46a8,#2b1c45)',
+      coverURL: row.CoverURL || '',
+      downloadURL: row.DownloadURL || '',
+      read: row.Read === 'TRUE' || row.Read === 'true'
+    }));
 }
 
 /* ============================================================
@@ -645,7 +684,7 @@ function closeModal(){ document.getElementById('modalBackdrop').classList.remove
 async function toggleRead(id, value){
   const book = BOOKS.find(b=>b.id===id);
   book.read = value;
-  await fetch(`https://script.google.com/macros/s/AKfycbyQJTtjIIT9uw05c6Qev1_YL5XFMQKqAYth2WWdZU2dCY3VFbOHR3qNadhrSeRWr4u1DA/exec?action=markRead&id=${id}&read=${value}`);
+  await fetch(`${APPS_SCRIPT_URL}?action=markRead&id=${id}&read=${value}`);
   refreshAll();
 }
 
