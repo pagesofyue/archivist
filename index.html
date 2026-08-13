@@ -108,7 +108,20 @@
     text-decoration:none;
   }
   .nav-links{ display:flex; gap:2.2rem; align-items:center; }
-  .nav-item{ position:relative; }
+  .nav-item{ position:relative; display:flex; align-items:center; }
+  .nav-label-group{ display:flex; align-items:center; gap:0.15rem; }
+  .nav-label{
+    color:var(--parchment); text-decoration:none;
+    font-family:'Jost', sans-serif; font-size:0.92rem; letter-spacing:0.04em;
+    padding:0.4rem 0;
+  }
+  .nav-label:hover{ color:var(--starlight); }
+  .caret-btn{
+    background:none; border:none; cursor:pointer;
+    padding:0.4rem 0.15rem 0.4rem 0.25rem;
+    color:var(--parchment);
+  }
+  .caret-btn:hover{ color:var(--starlight); }
   .nav-item > button{
     background:none; border:none; cursor:pointer;
     font-family:'Jost', sans-serif;
@@ -187,9 +200,13 @@
     font-size:0.75rem; z-index:2;
   }
   .book-card.is-read .read-badge{ display:flex; }
-  .book-meta{ margin-top:0.6rem; }
+  .book-meta{ margin-top:0.6rem; text-align:center; }
   .book-meta .num{ color:var(--twilight); font-size:0.78rem; }
-  .book-meta .t{ font-size:0.86rem; font-weight:500; line-height:1.25; margin-top:0.1rem; }
+  .book-meta .t{
+    font-size:0.86rem; font-weight:500; line-height:1.25; margin-top:0.1rem;
+    white-space:nowrap; overflow:hidden;
+    display:block; width:100%;
+  }
   .download-btn{
     display:block; width:100%; margin-top:0.55rem;
     background:var(--twilight); color:var(--parchment);
@@ -221,6 +238,7 @@
   .modal-cover{
     display:flex; align-items:flex-end; padding:1.4rem;
     color:var(--parchment); position:relative; overflow:hidden;
+    background-color:var(--night);
   }
   .modal-cover::before{ content:''; position:absolute; inset:0; background:radial-gradient(circle at 30% 15%, rgba(255,255,255,0.2), transparent 55%); }
   .modal-cover .title{ font-family:'Cormorant Garamond', serif; font-size:1.6rem; font-weight:600; position:relative; z-index:1; }
@@ -247,6 +265,48 @@
   .read-toggle input{ width:18px; height:18px; accent-color:var(--twilight); cursor:pointer; }
 
   .empty{ color:var(--twilight); font-style:italic; padding:2rem 0; }
+
+  /* ---------- Filters & pagination ---------- */
+  .filter-bar{
+    display:flex; gap:0.8rem; flex-wrap:wrap;
+    margin-bottom:2.4rem; padding-bottom:1.5rem;
+    border-bottom:1px solid var(--line);
+  }
+  .filter-search{
+    flex:1; min-width:200px;
+    padding:0.6rem 1rem;
+    border:1px solid var(--line); border-radius:8px;
+    font-family:'Jost', sans-serif; font-size:0.9rem;
+    background:var(--parchment-dim); color:var(--ink);
+  }
+  .filter-select{
+    padding:0.6rem 1rem;
+    border:1px solid var(--line); border-radius:8px;
+    font-family:'Jost', sans-serif; font-size:0.9rem;
+    background:var(--parchment-dim); color:var(--ink);
+    cursor:pointer; max-width:220px;
+  }
+  .filter-search:focus, .filter-select:focus{ outline:2px solid var(--twilight); outline-offset:1px; }
+
+  .pagination{
+    display:flex; align-items:center; justify-content:center; gap:1.2rem;
+    margin-top:2.6rem; padding-top:1.6rem; border-top:1px solid var(--line);
+    font-size:0.88rem; color:var(--twilight);
+  }
+  .pagination button{
+    background:var(--twilight); color:var(--parchment);
+    border:none; border-radius:6px; padding:0.5rem 1.2rem;
+    font-family:'Jost', sans-serif; font-size:0.85rem; cursor:pointer;
+    transition:background .2s;
+  }
+  .pagination button:hover:not(:disabled){ background:var(--starlight); color:var(--night-deep); }
+  .pagination button:disabled{ opacity:0.35; cursor:default; }
+
+  .back-link{
+    display:inline-block; margin-bottom:1.8rem;
+    color:var(--twilight); text-decoration:none; font-size:0.9rem;
+  }
+  .back-link:hover{ color:var(--starlight); }
 </style>
 </head>
 <body>
@@ -257,11 +317,17 @@
     <div class="nav-links">
       <div class="nav-item"><button onclick="showTab('home');return false;">Home</button></div>
       <div class="nav-item" id="nav-backlist">
-        <button onclick="toggleDropdown('nav-backlist')">Backlist <span class="caret">▾</span></button>
+        <div class="nav-label-group">
+          <a href="#" class="nav-label" onclick="showTab('backlist');return false;">Backlist</a>
+          <button class="caret-btn" onclick="event.stopPropagation();toggleDropdown('nav-backlist')" aria-label="Browse Backlist authors"><span class="caret">▾</span></button>
+        </div>
         <div class="dropdown" id="dd-backlist"></div>
       </div>
       <div class="nav-item" id="nav-arc">
-        <button onclick="toggleDropdown('nav-arc')">ARC <span class="caret">▾</span></button>
+        <div class="nav-label-group">
+          <a href="#" class="nav-label" onclick="showTab('arc');return false;">ARC</a>
+          <button class="caret-btn" onclick="event.stopPropagation();toggleDropdown('nav-arc')" aria-label="Browse ARC authors"><span class="caret">▾</span></button>
+        </div>
         <div class="dropdown" id="dd-arc"></div>
       </div>
     </div>
@@ -282,6 +348,7 @@
   <div class="tab-panel active" id="tab-home"></div>
   <div class="tab-panel" id="tab-backlist"></div>
   <div class="tab-panel" id="tab-arc"></div>
+  <div class="tab-panel" id="tab-author"></div>
 </main>
 
 <div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this) closeModal()">
@@ -364,9 +431,10 @@ function groupBy(list, key){
   }, {});
 }
 
-function coverStyle(book){
+function coverStyle(book, fit){
+  fit = fit || 'cover';
   if(book.coverURL){
-    return `background-image:url('${book.coverURL}'); background-size:cover; background-position:center;`;
+    return `background-image:url('${book.coverURL}'); background-size:${fit}; background-position:center; background-repeat:no-repeat;`;
   }
   return `background:${book.coverColor};`;
 }
@@ -399,11 +467,116 @@ function renderAuthorSection(author, books){
   return `<div class="author-block"><h2>${author}</h2>${seriesHtml}</div>`;
 }
 
-function renderTab(panelId, books){
-  const panel = document.getElementById(panelId);
-  if(!books.length){ panel.innerHTML = '<div class="empty">No books here yet.</div>'; return; }
-  const byAuthor = groupBy(books, 'author');
-  panel.innerHTML = Object.keys(byAuthor).sort().map(author => renderAuthorSection(author, byAuthor[author])).join('');
+/* ---------- Flat views: Home / Backlist / ARC ---------- */
+let currentView = 'home';
+let currentAuthorName = null;
+let filters = { search:'', series:'', author:'' };
+let currentPage = { home:1, backlist:1, arc:1 };
+const PAGE_SIZE = 50;
+
+function poolForView(view){
+  if(view==='backlist') return BOOKS.filter(b=>b.tab==='Backlist');
+  if(view==='arc') return BOOKS.filter(b=>b.tab==='ARC');
+  return BOOKS; // home = everything
+}
+
+function applyFilters(pool){
+  return pool.filter(b=>{
+    if(filters.series && b.series !== filters.series) return false;
+    if(filters.author && b.author !== filters.author) return false;
+    if(filters.search){
+      const q = filters.search.toLowerCase();
+      if(!b.title.toLowerCase().includes(q) && !b.author.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function esc(str){ return String(str).replace(/"/g,'&quot;'); }
+
+function renderFilterBar(view, pool){
+  const seriesList = [...new Set(pool.map(b=>b.series))].filter(Boolean).sort();
+  const authorList = [...new Set(pool.map(b=>b.author))].filter(Boolean).sort();
+  return `
+    <div class="filter-bar">
+      <input type="text" class="filter-search" placeholder="Search title or author…" value="${esc(filters.search)}" oninput="onFilterChange('${view}','search', this.value)">
+      <select class="filter-select" onchange="onFilterChange('${view}','series', this.value)">
+        <option value="">All Series</option>
+        ${seriesList.map(s=>`<option value="${esc(s)}" ${filters.series===s?'selected':''}>${s}</option>`).join('')}
+      </select>
+      <select class="filter-select" onchange="onFilterChange('${view}','author', this.value)">
+        <option value="">All Authors</option>
+        ${authorList.map(a=>`<option value="${esc(a)}" ${filters.author===a?'selected':''}>${a}</option>`).join('')}
+      </select>
+    </div>`;
+}
+
+function renderFlatView(view){
+  const panel = document.getElementById('tab-'+view);
+  const pool = poolForView(view);
+  panel.innerHTML = renderFilterBar(view, pool) + `<div id="tab-${view}-results"></div>`;
+  renderResults(view);
+}
+
+function renderResults(view){
+  const resultsEl = document.getElementById('tab-'+view+'-results');
+  if(!resultsEl) return;
+  const pool = poolForView(view);
+  const filtered = applyFilters(pool);
+
+  if(!filtered.length){
+    resultsEl.innerHTML = '<div class="empty">No books match.</div>';
+    return;
+  }
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  currentPage[view] = Math.min(currentPage[view] || 1, totalPages);
+  const start = (currentPage[view]-1) * PAGE_SIZE;
+  const pageBooks = filtered.slice(start, start+PAGE_SIZE);
+
+  resultsEl.innerHTML = `
+    <div class="book-grid">${pageBooks.map(renderBookCard).join('')}</div>
+    ${renderPagination(view, currentPage[view], totalPages)}`;
+  fitTitles();
+}
+
+function renderPagination(view, page, totalPages){
+  if(totalPages<=1) return '';
+  return `
+    <div class="pagination">
+      <button ${page<=1?'disabled':''} onclick="changePage('${view}', ${page-1})">Prev</button>
+      <span>Page ${page} of ${totalPages}</span>
+      <button ${page>=totalPages?'disabled':''} onclick="changePage('${view}', ${page+1})">Next</button>
+    </div>`;
+}
+
+function changePage(view, page){
+  currentPage[view] = page;
+  renderResults(view);
+  document.getElementById('tab-'+view).scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function onFilterChange(view, key, value){
+  filters[key] = value;
+  currentPage[view] = 1;
+  renderResults(view);
+}
+
+/* ---------- Author subpage (only place books group by series) ---------- */
+function renderAuthorPage(author){
+  const panel = document.getElementById('tab-author');
+  const books = BOOKS.filter(b=>b.author===author);
+  panel.innerHTML = `<a href="#" class="back-link" onclick="showTab('home');return false;">← Back to all books</a>` +
+    renderAuthorSection(author, books);
+  fitTitles();
+}
+
+function jumpToAuthor(author){
+  closeAllDropdowns();
+  currentView = 'author';
+  currentAuthorName = author;
+  activatePanel('tab-author');
+  renderAuthorPage(author);
 }
 
 function renderDropdown(ddId, books){
@@ -413,20 +586,19 @@ function renderDropdown(ddId, books){
   ).join('');
 }
 
-function jumpToAuthor(author){
-  const tab = BOOKS.find(b=>b.author===author).tab.toLowerCase();
-  showTab(tab);
-  closeAllDropdowns();
-  setTimeout(()=>{
-    const heading = [...document.querySelectorAll('.author-block h2')].find(h=>h.textContent===author);
-    if(heading) heading.scrollIntoView({behavior:'smooth', block:'start'});
-  }, 50);
+function activatePanel(id){
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top: document.querySelector('nav').offsetHeight, behavior:'smooth'});
 }
 
 function showTab(name){
-  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
-  document.getElementById('tab-'+name).classList.add('active');
-  window.scrollTo({top: document.querySelector('nav').offsetHeight, behavior:'smooth'});
+  closeAllDropdowns();
+  currentView = name;
+  activatePanel('tab-'+name);
+  filters = { search:'', series:'', author:'' };
+  currentPage[name] = 1;
+  renderFlatView(name);
 }
 
 function toggleDropdown(id){
@@ -445,7 +617,7 @@ function openModal(id){
   const book = BOOKS.find(b=>b.id===id);
   const m = document.getElementById('modalContent');
   m.innerHTML = `
-    <div class="modal-cover" style="${coverStyle(book)}">
+    <div class="modal-cover" style="${coverStyle(book, 'contain')}">
       ${book.coverURL ? '' : `<div class="title">${book.title}</div>`}
     </div>
     <div class="modal-body">
@@ -480,17 +652,37 @@ async function toggleRead(id, value){
 function refreshAll(){
   const backlistBooks = BOOKS.filter(b=>b.tab==='Backlist');
   const arcBooks = BOOKS.filter(b=>b.tab==='ARC');
-  renderTab('tab-home', BOOKS);
-  renderTab('tab-backlist', backlistBooks);
-  renderTab('tab-arc', arcBooks);
   renderDropdown('dd-backlist', backlistBooks);
   renderDropdown('dd-arc', arcBooks);
+  if(currentView==='author'){
+    renderAuthorPage(currentAuthorName);
+  } else {
+    renderResults(currentView);
+  }
 }
+
+function fitTitles(){
+  const MAX_SIZE = 0.86; // rem, matches the CSS default
+  const MIN_SIZE = 0.6;  // rem, floor so text never gets illegibly tiny
+  const STEP = 0.04;
+  document.querySelectorAll('.book-meta .t').forEach(el => {
+    let size = MAX_SIZE;
+    el.style.fontSize = size + 'rem';
+    while(el.scrollWidth > el.clientWidth && size > MIN_SIZE){
+      size -= STEP;
+      el.style.fontSize = size + 'rem';
+    }
+  });
+}
+// Re-fit on resize too, since the grid reflows at different widths
+window.addEventListener('resize', () => { if(BOOKS.length) fitTitles(); });
 
 (async function init(){
   seededStars(22);
   BOOKS = await loadBooks();
-  refreshAll();
+  renderDropdown('dd-backlist', BOOKS.filter(b=>b.tab==='Backlist'));
+  renderDropdown('dd-arc', BOOKS.filter(b=>b.tab==='ARC'));
+  renderFlatView('home');
 })();
 </script>
 </body>
