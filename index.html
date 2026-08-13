@@ -414,11 +414,15 @@ const MOCK_BOOKS = [
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQ2flRDEAI3FPBAfsUlDJ2VYpxeYs-Yug9IoONZT7mEN8RvAupHNvqcIOk7auRuISIF5XKhm8EhFM2-/pub?gid=0&single=true&output=csv';
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyQJTtjIIT9uw05c6Qev1_YL5XFMQKqAYth2WWdZU2dCY3VFbOHR3qNadhrSeRWr4u1DA/exec';
 
-function normalizeTab(value){
-  const v = String(value || '').trim().toLowerCase();
-  if(v === 'arc') return 'ARC';
-  if(v === 'backlist') return 'Backlist';
-  return value;
+function normalizeTabs(value){
+  const raw = String(value || '').split(/[,&/]/).map(s=>s.trim().toLowerCase()).filter(Boolean);
+  const tabs = raw.map(v=>{
+    if(v==='arc') return 'ARC';
+    if(v==='backlist') return 'Backlist';
+    return null;
+  }).filter(Boolean);
+  // if nothing recognized, keep the raw text as-is so bad data is easy to spot rather than silently vanishing
+  return tabs.length ? [...new Set(tabs)] : (String(value || '').trim() ? [String(value).trim()] : []);
 }
 
 async function loadBooks(){
@@ -431,7 +435,7 @@ async function loadBooks(){
       id: String(row.ID),
       title: row.Title,
       author: row.Author,
-      tab: normalizeTab(row.Tab),
+      tabs: normalizeTabs(row.Tab),
       series: row.Series,
       seriesOrder: Number(row.SeriesOrder) || 1,
       genre: row.Genre,
@@ -514,8 +518,8 @@ let currentPage = { home:1, backlist:1, arc:1 };
 const PAGE_SIZE = 50;
 
 function poolForView(view){
-  if(view==='backlist') return BOOKS.filter(b=>b.tab==='Backlist');
-  if(view==='arc') return BOOKS.filter(b=>b.tab==='ARC');
+  if(view==='backlist') return BOOKS.filter(b=>b.tabs.includes('Backlist'));
+  if(view==='arc') return BOOKS.filter(b=>b.tabs.includes('ARC'));
   return BOOKS; // home = everything
 }
 
@@ -670,7 +674,7 @@ function openModal(id){
         <div><span class="label">Pages</span><span>${book.pages || '—'}</span></div>
         <div><span class="label">Published</span><span>${book.published || '—'}</span></div>
         <div><span class="label">ISBN/ASIN</span><span>${book.isbn || '—'}</span></div>
-        <div><span class="label">Shelf</span><span>${book.tab}</span></div>
+        <div><span class="label">Shelf</span><span>${book.tabs.join(' & ')}</span></div>
       </div>
       <label class="read-toggle">
         <input type="checkbox" ${book.read ? 'checked':''} onchange="toggleRead('${book.id}', this.checked)">
@@ -681,16 +685,18 @@ function openModal(id){
 }
 function closeModal(){ document.getElementById('modalBackdrop').classList.remove('open'); }
 
-async function toggleRead(id, value){
+function toggleRead(id, value){
+  // NOTE: this is session-only right now — it updates what you see,
+  // but doesn't save anywhere, so it resets on reload. See SETUP.md
+  // for options once you decide how you want writes handled.
   const book = BOOKS.find(b=>b.id===id);
   book.read = value;
-  await fetch(`${APPS_SCRIPT_URL}?action=markRead&id=${id}&read=${value}`);
   refreshAll();
 }
 
 function refreshAll(){
-  const backlistBooks = BOOKS.filter(b=>b.tab==='Backlist');
-  const arcBooks = BOOKS.filter(b=>b.tab==='ARC');
+  const backlistBooks = BOOKS.filter(b=>b.tabs.includes('Backlist'));
+  const arcBooks = BOOKS.filter(b=>b.tabs.includes('ARC'));
   renderDropdown('dd-backlist', backlistBooks);
   renderDropdown('dd-arc', arcBooks);
   if(currentView==='author'){
@@ -719,8 +725,8 @@ window.addEventListener('resize', () => { if(BOOKS.length) fitTitles(); });
 (async function init(){
   seededStars(22);
   BOOKS = await loadBooks();
-  renderDropdown('dd-backlist', BOOKS.filter(b=>b.tab==='Backlist'));
-  renderDropdown('dd-arc', BOOKS.filter(b=>b.tab==='ARC'));
+  renderDropdown('dd-backlist', BOOKS.filter(b=>b.tabs.includes('Backlist')));
+  renderDropdown('dd-arc', BOOKS.filter(b=>b.tabs.includes('ARC')));
   renderFlatView('home');
 })();
 </script>
