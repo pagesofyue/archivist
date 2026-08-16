@@ -218,6 +218,16 @@
     transition:background .2s;
   }
   .download-btn:hover{ background:var(--starlight); color:var(--night-deep); }
+  .audiobook-btn{
+    display:block; width:100%; margin-top:0.4rem;
+    background:transparent; color:var(--twilight);
+    border:1px solid var(--twilight); border-radius:6px;
+    font-family:'Jost', sans-serif; font-size:0.76rem; letter-spacing:0.03em;
+    padding:0.42rem 0.4rem; text-align:center;
+    text-decoration:none; cursor:pointer;
+    transition:background .2s, color .2s;
+  }
+  .audiobook-btn:hover{ background:var(--twilight); color:var(--parchment); }
 
   /* ---------- Modal ---------- */
   .modal-backdrop{
@@ -446,6 +456,7 @@ async function loadBooks(){
       coverColor: 'linear-gradient(160deg,#6b46a8,#2b1c45)',
       coverURL: row.CoverURL || '',
       downloadURL: row.DownloadURL || '',
+      audiobookURL: row.AudiobookURL || '',
       read: row.Read === 'TRUE' || row.Read === 'true'
     }));
 }
@@ -494,6 +505,7 @@ function renderBookCard(book){
         <div class="t">${book.title}</div>
       </div>
       ${book.downloadURL ? `<a class="download-btn" href="${book.downloadURL}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Download</a>` : ''}
+      ${book.audiobookURL ? `<a class="audiobook-btn" href="${book.audiobookURL}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Audiobook</a>` : ''}
     </div>`;
 }
 
