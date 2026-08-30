@@ -322,6 +322,18 @@
 </head>
 <body>
 
+<div id="lockScreen" style="position:fixed;inset:0;z-index:999;display:flex;align-items:center;justify-content:center;background:linear-gradient(180deg, #221536 0%, #3a2560 55%, #4a2f7a 100%);">
+  <div style="width:100%;max-width:320px;padding:2.4rem;text-align:center;">
+    <div class="eyebrow" style="color:var(--starlight);margin-bottom:0.8rem;">The Archivist</div>
+    <h1 style="color:var(--parchment);font-size:1.6rem;font-weight:500;margin:0 0 1.4rem;">Enter Passcode</h1>
+    <input type="password" inputmode="numeric" id="lockInput" placeholder="••••••••" style="width:100%;padding:0.8rem 1rem;border-radius:8px;border:1px solid rgba(166,121,221,0.35);background:rgba(255,255,255,0.06);color:var(--parchment);font-family:'Jost',sans-serif;font-size:1.1rem;letter-spacing:0.3em;text-align:center;">
+    <button id="lockSubmit" style="margin-top:1rem;width:100%;padding:0.75rem;border:none;border-radius:8px;background:var(--twilight);color:var(--parchment);font-family:'Jost',sans-serif;font-size:0.9rem;letter-spacing:0.04em;cursor:pointer;">Enter</button>
+    <div id="lockError" style="margin-top:0.9rem;color:var(--rose);font-size:0.82rem;min-height:1.2em;"></div>
+  </div>
+</div>
+
+<div id="siteContent" style="display:none;">
+
 <nav>
   <div class="nav-inner">
     <a href="#" class="brand" onclick="showTab('home');return false;">THE ARCHIVIST</a>
@@ -340,6 +352,9 @@
           <button class="caret-btn" onclick="event.stopPropagation();toggleDropdown('nav-arc')" aria-label="Browse ARC authors"><span class="caret">▾</span></button>
         </div>
         <div class="dropdown" id="dd-arc"></div>
+      </div>
+      <div class="nav-item">
+        <a href="reading-companion.html" class="nav-label">Notes</a>
       </div>
     </div>
   </div>
@@ -365,6 +380,52 @@
 <div class="modal-backdrop" id="modalBackdrop" onclick="if(event.target===this) closeModal()">
   <div class="modal" id="modalContent"></div>
 </div>
+
+</div><!-- /#siteContent -->
+
+<script>
+/* ---------- Passcode gate ----------
+   This is a soft lock, not real security: the page's JS is fully
+   visible to anyone who views source, so a determined visitor
+   could read the check below or bypass it via devtools. It just
+   keeps casual visitors and search engines from wandering in. */
+(function(){
+  const PIN_HASH = '5a6348c370e17c0f4dc7858897bbb9df85a3050672191757e59ca06856c0d3c9';
+  const UNLOCK_KEY = 'archivist_unlocked';
+
+  async function sha256Hex(str){
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+    return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+  }
+
+  function unlock(){
+    document.getElementById('lockScreen').style.display = 'none';
+    document.getElementById('siteContent').style.display = 'block';
+  }
+
+  if(localStorage.getItem(UNLOCK_KEY) === '1'){
+    unlock();
+  } else {
+    const input = document.getElementById('lockInput');
+    const submit = document.getElementById('lockSubmit');
+    const errorEl = document.getElementById('lockError');
+    async function tryUnlock(){
+      const hash = await sha256Hex(input.value.trim());
+      if(hash === PIN_HASH){
+        localStorage.setItem(UNLOCK_KEY, '1');
+        unlock();
+      } else {
+        errorEl.textContent = 'Incorrect passcode.';
+        input.value = '';
+        input.focus();
+      }
+    }
+    submit.addEventListener('click', tryUnlock);
+    input.addEventListener('keydown', (e)=>{ if(e.key==='Enter') tryUnlock(); });
+    input.focus();
+  }
+})();
+</script>
 
 <script>
 /* ============================================================

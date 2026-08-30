@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notes — The Archivist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Source+Serif+4:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;background:#f2efe5;min-height:100vh;}
+  #root{min-height:100vh;display:flex;flex-direction:column;}
+  .page-wrap{max-width:1100px;margin:0 auto;padding:2rem 1.5rem 4rem;width:100%;}
+  .top-back{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px; color:#7a7568; text-decoration:none;
+    display:inline-block; margin-bottom:1.2rem;
+  }
+  .top-back:hover{ color:#a9822b; }
+</style>
+</head>
+<body>
+<div id="root">
+  <div class="page-wrap">
+    <a class="top-back" href="index.html">← Back to The Archivist</a>
+    <div id="app-mount"></div>
+  </div>
+</div>
+
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useRef, useCallback, useMemo } = React;
+
+/* ============================================================
+   ICONS (small inline SVGs, standing in for lucide-react so this
+   file has no extra runtime dependency)
+   ============================================================ */
+function Icon({ path, size = 14, strokeWidth = 2, viewBox = "0 0 24 24" }) {
+  return (
+    <svg width={size} height={size} viewBox={viewBox} fill="none" stroke="currentColor"
+         strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round"
+         style={{ flexShrink: 0 }}>
+      {path}
+    </svg>
+  );
+}
+const Plus = (p) => <Icon {...p} path={<><path d="M12 5v14M5 12h14" /></>} />;
+const X = (p) => <Icon {...p} path={<><path d="M18 6 6 18M6 6l12 12" /></>} />;
+const Trash2 = (p) => <Icon {...p} path={<><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2m2 0-1 14a1 1 0 0 1-1 1H7a1 1 0 0 1-1-1L5 6" /><path d="M10 11v6M14 11v6" /></>} />;
+const Check = (p) => <Icon {...p} path={<><path d="M20 6 9 17l-5-5" /></>} />;
+const ChevronDown = (p) => <Icon {...p} path={<><path d="m6 9 6 6 6-6" /></>} />;
+const ChevronRight = (p) => <Icon {...p} path={<><path d="m9 18 6-6-6-6" /></>} />;
+const Pencil = (p) => <Icon {...p} path={<><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" /></>} />;
+const BookOpen = (p) => <Icon {...p} path={<><path d="M2 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H2Z" /><path d="M22 4h-6a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h6Z" /></>} />;
+const Feather = (p) => <Icon {...p} path={<><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z" /><path d="M16 8 2 22" /><path d="M17.5 15H9" /></>} />;
+const Settings = (p) => <Icon {...p} path={<><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09A1.65 1.65 0 0 0 15 4.6a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" /></>} />;
+
+/* ============================================================
+   GITHUB-BACKED STORAGE
+   All notes live in one JSON file, committed to the repo via
+   GitHub's Contents API. A personal access token is entered once
+   and kept only in this browser's localStorage — it is never
+   written into this file or committed anywhere.
+   ============================================================ */
+const OWNER = 'pagesofyue';
+const REPO = 'archivist';
+const BRANCH = 'main';
+const FILE_PATH = 'data/reading-notes.json';
+const TOKEN_KEY = 'archivist_gh_pat';
+
+function b64EncodeUnicode(str) {
+  const bytes = new TextEncoder().encode(str);
+  let binary = '';
+  bytes.forEach((b) => { binary += String.fromCharCode(b); });
+  return btoa(binary);
+}
+function b64DecodeUnicode(b64) {
+  const binary = atob(b64.replace(/\n/g, ''));
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return new TextDecoder().decode(bytes);
+}
+
+function createGitHubStore(token) {
+  let sha = null; // sha of the file as last known on GitHub
+  let chain = Promise.resolve(); // serializes writes so we never race on `sha`
+
+  const headers = {
+    Authorization: `token ${token}`,
+    Accept: 'application/vnd.github+json',
+  };
+
+  async function load() {
+    const res = await fetch(
+      `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}?ref=${BRANCH}`,
+      { headers }
+    );
+    if (res.status === 404) {
+      sha = null;
+      return { books: {} };
+    }
+    if (res.status === 401 || res.status === 403) {
+      throw new Error('auth');
+    }
+    if (!res.ok) throw new Error('GitHub read failed (' + res.status + ')');
+    const data = await res.json();
+    sha = data.sha;
+    try {
+      return JSON.parse(b64DecodeUnicode(data.content));
+    } catch {
+      return { books: {} };
+    }
+  }
+
+  function save(db, message) {
+    chain = chain.then(() => doSave(db, message));
+    return chain;
+  }
+
+  async function doSave(db, message) {
+    const body = {
+      message: message || 'Update reading notes',
+      content: b64EncodeUnicode(JSON.stringify(db, null, 2)),
+      branch: BRANCH,
+    };
+    if (sha) body.sha = sha;
+    const res = await fetch(
+      `https://api.github.com/repos/${OWNER}/${REPO}/contents/${FILE_PATH}`,
+      { method: 'PUT', headers: { ...headers, 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+    );
+    if (res.status === 401 || res.status === 403) throw new Error('auth');
+    if (res.status === 409) {
+      // sha out of date (edited elsewhere) — refetch and let caller retry
+      sha = null;
+      throw new Error('conflict');
+    }
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.message || 'GitHub save failed (' + res.status + ')');
+    }
+    const data = await res.json();
+    sha = data.content.sha;
+  }
+
+  return { load, save };
+}
+
+/* ============================================================
+   HELPERS (unchanged from the original notetaking logic)
+   ============================================================ */
+const SPINE_COLORS = ['#8B5E3C', '#4F6D5A', '#6B4C6B', '#B3555F', '#3E5C76', '#8C7A3E', '#5A4A63'];
+const uid = () => 'b_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+function orderedKeys(meta) {
+  const keys = [];
+  if (meta.hasPrologue) keys.push('prologue');
+  for (let i = 1; i <= meta.chapterCount; i++) keys.push(String(i));
+  if (meta.hasEpilogue) keys.push('epilogue');
+  return keys;
+}
+function totalUnits(meta) {
+  return meta.chapterCount + (meta.hasPrologue ? 1 : 0) + (meta.hasEpilogue ? 1 : 0);
+}
+function labelFor(key) {
+  if (key === 'prologue') return 'Prologue';
+  if (key === 'epilogue') return 'Epilogue';
+  return `Chapter ${key}`;
+}
+function catalogNo(key) {
+  if (key === 'prologue') return 'Pro.';
+  if (key === 'epilogue') return 'Epi.';
+  return 'No. ' + String(key).padStart(2, '0');
+}
+
+/* ============================================================
+   KINDLE "My Clippings.txt" PARSING
+   Kindle's export doesn't include chapter names, only a location
+   number — so we parse everything, group by book title, and give
+   each clipping a *guessed* chapter based on where its location
+   falls relative to the book's location range. The guess is only
+   a starting point; the import screen lets you fix any of them
+   before anything is saved.
+   ============================================================ */
+function parseClippingsFile(text) {
+  const blocks = text.split(/={5,}/).map((b) => b.trim()).filter(Boolean);
+  const entries = [];
+  for (const block of blocks) {
+    const lines = block.split(/\r?\n/).map((l) => l.trim()).filter((l) => l.length > 0);
+    if (lines.length < 2) continue;
+    const titleLine = lines[0];
+    const metaLine = lines[1];
+    const contentLines = lines.slice(2);
+
+    let title = titleLine;
+    let author = '';
+    const m = titleLine.match(/^(.*)\(([^()]+)\)\s*$/);
+    if (m) { title = m[1].trim(); author = m[2].trim(); }
+
+    let type = 'Highlight';
+    if (/Your Note/i.test(metaLine)) type = 'Note';
+    else if (/Your Bookmark/i.test(metaLine)) type = 'Bookmark';
+    else if (/Your Highlight/i.test(metaLine)) type = 'Highlight';
+
+    const locMatch = metaLine.match(/Location\s+(\d+)(?:-(\d+))?/i) || metaLine.match(/location\s+(\d+)/i);
+    const pageMatch = metaLine.match(/page\s+([\w-]+)/i);
+    const location = locMatch ? Number(locMatch[1]) : null;
+
+    entries.push({
+      title,
+      author,
+      type,
+      location,
+      page: pageMatch ? pageMatch[1] : null,
+      content: contentLines.join(' ').trim(),
+    });
+  }
+  return entries.filter((e) => e.content || e.type === 'Bookmark');
+}
+
+function guessChapterForEntries(entries, meta) {
+  const keys = orderedKeys(meta);
+  const withLoc = entries.filter((e) => e.location != null);
+  if (withLoc.length === 0) {
+    return entries.map((e) => ({ ...e, guessedKey: keys[0] }));
+  }
+  const min = Math.min(...withLoc.map((e) => e.location));
+  const max = Math.max(...withLoc.map((e) => e.location));
+  const span = Math.max(1, max - min);
+  return entries.map((e) => {
+    if (e.location == null) return { ...e, guessedKey: keys[0] };
+    const frac = (e.location - min) / span;
+    const idx = Math.min(keys.length - 1, Math.max(0, Math.floor(frac * keys.length)));
+    return { ...e, guessedKey: keys[idx] };
+  });
+}
+
+function formatImportedEntry(entry) {
+  const label = entry.type === 'Note' ? 'Kindle note' : entry.type === 'Bookmark' ? 'Kindle bookmark' : 'Kindle highlight';
+  const locPart = entry.location != null ? `, loc ${entry.location}` : entry.page ? `, p. ${entry.page}` : '';
+  if (entry.type === 'Bookmark') return `— ${label}${locPart}`;
+  return `> ${entry.content}\n— ${label}${locPart}`;
+}
+
+/* ============================================================
+   EXPORT — plain Markdown + a formatted, styled HTML document
+   ============================================================ */
+function slugify(str) {
+  return String(str).toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '') || 'book';
+}
+
+function buildMarkdown(book) {
+  const { meta, chapters } = book;
+  const keys = orderedKeys(meta);
+  const total = totalUnits(meta);
+  const readCount = keys.filter((k) => chapters[k]?.read).length;
+  let md = `# ${meta.title}\n\n*${meta.author || 'Unknown author'}*\n\n`;
+  if (meta.series) md += `${meta.series}${meta.seriesOrder ? ' — Book ' + meta.seriesOrder : ''}\n\n`;
+  md += `**Progress:** ${readCount} / ${total} read\n\n---\n\n`;
+  keys.forEach((key) => {
+    const ch = chapters[key] || { read: false, notes: '' };
+    md += `## ${labelFor(key)} ${ch.read ? '✓' : ''}\n\n`;
+    md += ch.notes && ch.notes.trim() ? `${ch.notes.trim()}\n\n` : `*No notes yet.*\n\n`;
+  });
+  return md;
+}
+
+function buildFormattedHTML(book) {
+  const { meta, chapters } = book;
+  const keys = orderedKeys(meta);
+  const total = totalUnits(meta);
+  const readCount = keys.filter((k) => chapters[k]?.read).length;
+  const esc = (s) => String(s || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+
+  const chapterHtml = keys.map((key) => {
+    const ch = chapters[key] || { read: false, notes: '' };
+    const notesHtml = ch.notes && ch.notes.trim()
+      ? ch.notes.trim().split(/\n{2,}/).map((para) => {
+          if (/^>/.test(para.trim())) {
+            const lines = para.trim().split(/\n/);
+            const quote = lines.filter((l) => l.startsWith('>')).map((l) => l.replace(/^>\s?/, '')).join(' ');
+            const attribution = lines.find((l) => l.startsWith('—'));
+            return `<blockquote>${esc(quote)}${attribution ? `<cite>${esc(attribution.replace(/^—\s?/, ''))}</cite>` : ''}</blockquote>`;
+          }
+          return `<p>${esc(para).replace(/\n/g, '<br>')}</p>`;
+        }).join('\n')
+      : `<p class="empty">No notes yet.</p>`;
+    return `
+      <section class="chapter">
+        <h2>${esc(labelFor(key))} ${ch.read ? '<span class="read-tick">✓ read</span>' : ''}</h2>
+        ${notesHtml}
+      </section>`;
+  }).join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>${esc(meta.title)} — Notes</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Source+Serif+4:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
+  :root{ --ink:#292c26; --ink-dim:#7a7568; --gold:#a9822b; --border:#d9d3c1; --bg:#f2efe5; --surface:#fdfcf8; }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--bg); color:var(--ink); font-family:'Source Serif 4', Georgia, serif; }
+  .page{ max-width:720px; margin:0 auto; padding:4rem 2rem 6rem; }
+  .eyebrow{ font-family:'IBM Plex Mono', monospace; font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--gold); margin-bottom:10px; }
+  h1{ font-family:'Fraunces', serif; font-size:2.4rem; font-weight:600; margin:0 0 6px; }
+  .author{ font-style:italic; color:var(--ink-dim); font-size:1.05rem; margin-bottom:1.6rem; }
+  .progress{ font-family:'IBM Plex Mono', monospace; font-size:12.5px; color:var(--ink-dim); border-top:1px solid var(--border); border-bottom:1px solid var(--border); padding:10px 0; margin-bottom:2.4rem; }
+  .chapter{ margin-bottom:2.2rem; padding-bottom:2.2rem; border-bottom:1px solid var(--border); }
+  .chapter:last-child{ border-bottom:none; }
+  h2{ font-family:'Fraunces', serif; font-size:1.35rem; font-weight:600; margin:0 0 0.9rem; display:flex; align-items:center; gap:10px; }
+  .read-tick{ font-family:'IBM Plex Mono', monospace; font-size:11px; color:var(--gold); font-weight:500; }
+  p{ line-height:1.7; font-size:15px; margin:0 0 1rem; }
+  p.empty{ color:var(--ink-dim); font-style:italic; }
+  blockquote{ margin:0 0 1rem; padding:0.9rem 1.2rem; background:var(--surface); border-left:3px solid var(--gold); border-radius:0 6px 6px 0; font-style:italic; }
+  blockquote cite{ display:block; margin-top:6px; font-family:'IBM Plex Mono', monospace; font-style:normal; font-size:11px; color:var(--ink-dim); }
+  @media print{ body{ background:#fff; } .page{ padding:1.2rem 0; } }
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="eyebrow">${meta.series ? esc(meta.series) + (meta.seriesOrder ? ' · Book ' + meta.seriesOrder : '') : 'Standalone'}</div>
+    <h1>${esc(meta.title)}</h1>
+    <div class="author">${esc(meta.author || 'Unknown author')}</div>
+    <div class="progress">${readCount} / ${total} read</div>
+    ${chapterHtml}
+  </div>
+</body>
+</html>`;
+}
+
+function downloadTextFile(filename, content, mime) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+}
+
+/* ============================================================
+   CONNECT SCREEN — shown until a token is saved
+   ============================================================ */
+function ConnectScreen({ onConnected }) {
+  const [tokenInput, setTokenInput] = useState('');
+  const [checking, setChecking] = useState(false);
+  const [err, setErr] = useState(null);
+
+  const tryConnect = async () => {
+    const t = tokenInput.trim();
+    if (!t) return;
+    setChecking(true);
+    setErr(null);
+    try {
+      const res = await fetch(`https://api.github.com/repos/${OWNER}/${REPO}`, {
+        headers: { Authorization: `token ${t}`, Accept: 'application/vnd.github+json' },
+      });
+      if (res.status === 401 || res.status === 403) {
+        setErr('That token was rejected. Check it has "Contents: read and write" on this repo.');
+        setChecking(false);
+        return;
+      }
+      if (!res.ok) {
+        setErr("Couldn't reach the repo. Check the token and try again.");
+        setChecking(false);
+        return;
+      }
+      localStorage.setItem(TOKEN_KEY, t);
+      onConnected(t);
+    } catch {
+      setErr('Network error — try again.');
+      setChecking(false);
+    }
+  };
+
+  return (
+    <div className="rc-root rc-connect">
+      <style>{RC_STYLES}</style>
+      <div className="rc-connect-card">
+        <div className="rc-eyebrow">Connect</div>
+        <div className="rc-book-title" style={{ fontSize: 24 }}>Link your GitHub token</div>
+        <p className="rc-connect-copy">
+          Notes are saved as a JSON file committed to <span className="rc-mono">{OWNER}/{REPO}</span> on <span className="rc-mono">{BRANCH}</span>.
+          Paste a fine-grained personal access token scoped to just this repo with "Contents: read and write" permission.
+          It's stored only in this browser (localStorage) — never written into this page or the repo.
+        </p>
+        <div className="rc-field">
+          <label>Personal access token</label>
+          <input
+            type="password"
+            value={tokenInput}
+            onChange={(e) => setTokenInput(e.target.value)}
+            placeholder="github_pat_..."
+            onKeyDown={(e) => { if (e.key === 'Enter') tryConnect(); }}
+          />
+        </div>
+        {err && <div className="rc-error-banner" style={{ marginBottom: 12 }}><span>{err}</span></div>}
+        <button className="rc-primary-btn" disabled={checking || !tokenInput.trim()} style={{ opacity: checking || !tokenInput.trim() ? 0.5 : 1 }} onClick={tryConnect}>
+          {checking ? 'Checking…' : 'Connect'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   MAIN APP
+   ============================================================ */
+function ReadingCompanion({ token, onDisconnect }) {
+  const storeRef = useRef(null);
+  if (!storeRef.current) storeRef.current = createGitHubStore(token);
+
+  const [db, setDb] = useState(null); // { books: { id: record } }, null = loading
+  const [selectedId, setSelectedId] = useState(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [openChapter, setOpenChapter] = useState(null);
+  const [editingMeta, setEditingMeta] = useState(false);
+  const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [saveFlash, setSaveFlash] = useState(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const loaded = await storeRef.current.load();
+        setDb(loaded);
+      } catch (e) {
+        if (e.message === 'auth') {
+          onDisconnect();
+        } else {
+          setLoadFailed(true);
+        }
+      }
+    })();
+  }, []);
+
+  const persist = useCallback((nextDb, message) => {
+    setDb(nextDb);
+    setSaving(true);
+    storeRef.current.save(nextDb, message)
+      .then(() => {
+        setSaving(false);
+        setSaveFlash(Date.now());
+        setTimeout(() => setSaveFlash(null), 900);
+      })
+      .catch((e) => {
+        setSaving(false);
+        if (e.message === 'auth') {
+          setError('GitHub rejected the save — check that your token still has "Contents: read and write" on this repo.');
+        } else if (e.message === 'conflict') {
+          setError('The file changed elsewhere since you loaded it. Reload the page to get the latest before saving again.');
+        } else {
+          setError('Could not save to GitHub. Try again.');
+        }
+      });
+  }, [onDisconnect]);
+
+  const sortedBooks = useMemo(() => {
+    if (!db) return [];
+    const all = Object.values(db.books).map((b) => b.meta);
+    const withSeries = all.filter((b) => b.series);
+    const standalone = all.filter((b) => !b.series);
+    withSeries.sort((a, b) => a.series.localeCompare(b.series) || ((a.seriesOrder || 0) - (b.seriesOrder || 0)));
+    standalone.sort((a, b) => a.title.localeCompare(b.title));
+    return [...withSeries, ...standalone];
+  }, [db]);
+
+  const currentBook = selectedId && db ? db.books[selectedId] : null;
+
+  const addBook = (form) => {
+    const id = uid();
+    const meta = {
+      id,
+      title: form.title.trim(),
+      author: form.author.trim(),
+      series: form.series.trim(),
+      seriesOrder: form.series.trim() ? Number(form.seriesOrder) || null : null,
+      chapterCount: Math.max(1, Number(form.chapterCount) || 1),
+      hasPrologue: form.hasPrologue,
+      hasEpilogue: form.hasEpilogue,
+      color: SPINE_COLORS[Object.keys(db.books).length % SPINE_COLORS.length],
+      dateAdded: Date.now(),
+    };
+    const chapters = {};
+    orderedKeys(meta).forEach((k) => { chapters[k] = { read: false, notes: '' }; });
+    const nextDb = { ...db, books: { ...db.books, [id]: { meta, chapters } } };
+    persist(nextDb, `Add "${meta.title}"`);
+    setShowAdd(false);
+    setSelectedId(id);
+    setOpenChapter(null);
+    setEditingMeta(false);
+  };
+
+  const updateMeta = (patch) => {
+    if (!currentBook) return;
+    const meta = { ...currentBook.meta, ...patch };
+    const nextDb = { ...db, books: { ...db.books, [meta.id]: { ...currentBook, meta } } };
+    persist(nextDb, `Update details for "${meta.title}"`);
+  };
+
+  const toggleRead = (key) => {
+    if (!currentBook) return;
+    const chapters = { ...currentBook.chapters, [key]: { ...currentBook.chapters[key], read: !currentBook.chapters[key].read } };
+    const nextDb = { ...db, books: { ...db.books, [currentBook.meta.id]: { ...currentBook, chapters } } };
+    persist(nextDb, `Toggle ${labelFor(key)} for "${currentBook.meta.title}"`);
+  };
+
+  const saveNotes = (key, notes) => {
+    if (!currentBook) return;
+    const chapters = { ...currentBook.chapters, [key]: { ...currentBook.chapters[key], notes } };
+    const nextDb = { ...db, books: { ...db.books, [currentBook.meta.id]: { ...currentBook, chapters } } };
+    persist(nextDb, `Update notes for "${currentBook.meta.title}"`);
+  };
+
+  const addChapter = () => {
+    if (!currentBook) return;
+    const nextNum = currentBook.meta.chapterCount + 1;
+    const meta = { ...currentBook.meta, chapterCount: nextNum };
+    const chapters = { ...currentBook.chapters, [String(nextNum)]: { read: false, notes: '' } };
+    const nextDb = { ...db, books: { ...db.books, [meta.id]: { meta, chapters } } };
+    persist(nextDb, `Add chapter to "${meta.title}"`);
+  };
+
+  const removeChapter = (key) => {
+    if (!currentBook || key === 'prologue' || key === 'epilogue') return;
+    const num = Number(key);
+    if (num !== currentBook.meta.chapterCount) return;
+    const meta = { ...currentBook.meta, chapterCount: Math.max(1, num - 1) };
+    const chapters = { ...currentBook.chapters };
+    delete chapters[key];
+    const nextDb = { ...db, books: { ...db.books, [meta.id]: { meta, chapters } } };
+    persist(nextDb, `Remove chapter from "${meta.title}"`);
+  };
+
+  const importHighlights = (assignments) => {
+    // assignments: { [chapterKey]: string[] } — formatted blocks to append
+    if (!currentBook) return;
+    const chapters = { ...currentBook.chapters };
+    let count = 0;
+    Object.entries(assignments).forEach(([key, blocks]) => {
+      if (!blocks.length) return;
+      const existing = chapters[key]?.notes || '';
+      const appended = blocks.join('\n\n');
+      chapters[key] = { ...chapters[key], notes: existing.trim() ? `${existing.trim()}\n\n${appended}` : appended };
+      count += blocks.length;
+    });
+    const nextDb = { ...db, books: { ...db.books, [currentBook.meta.id]: { ...currentBook, chapters } } };
+    persist(nextDb, `Import ${count} Kindle clipping(s) into "${currentBook.meta.title}"`);
+  };
+
+  const deleteBook = () => {
+    if (!currentBook) return;
+    const books = { ...db.books };
+    const title = currentBook.meta.title;
+    delete books[currentBook.meta.id];
+    const nextDb = { ...db, books };
+    persist(nextDb, `Remove "${title}"`);
+    setSelectedId(null);
+  };
+
+  if (loadFailed) {
+    return (
+      <div className="rc-root rc-connect">
+        <style>{RC_STYLES}</style>
+        <div className="rc-connect-card">
+          <div className="rc-error-banner"><span>Couldn't load your notes from GitHub. Check your connection and reload the page.</span></div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rc-root">
+      <style>{RC_STYLES}</style>
+
+      {error && (
+        <div style={{ position: 'fixed', top: 16, left: '50%', transform: 'translateX(-50%)', zIndex: 60 }}>
+          <div className="rc-error-banner">
+            <span>{error}</span>
+            <button onClick={() => setError(null)}><X size={14} /></button>
+          </div>
+        </div>
+      )}
+
+      <div className="rc-shelf">
+        <div className="rc-shelf-header">
+          <span className="rc-shelf-title">Your Shelf</span>
+          <div style={{ display: 'flex', gap: 6 }}>
+            <button className="rc-add-btn" onClick={() => setShowAdd(true)} title="Add a book"><Plus size={15} /></button>
+            <button className="rc-add-btn" onClick={onDisconnect} title="Disconnect GitHub"><Settings size={14} /></button>
+          </div>
+        </div>
+
+        {db === null && <div className="rc-empty-shelf">Loading your shelf from GitHub…</div>}
+
+        {db !== null && sortedBooks.length === 0 && (
+          <div className="rc-empty-shelf">
+            Empty, for now. <button className="rc-empty-link" onClick={() => setShowAdd(true)}>Add the book you're reading</button> to start taking notes chapter by chapter.
+          </div>
+        )}
+
+        {sortedBooks.map((b) => {
+          const total = totalUnits(b);
+          return (
+            <div className="rc-spine-row" key={b.id}>
+              <button
+                className={'rc-spine' + (selectedId === b.id ? ' active' : '')}
+                style={{ '--color': b.color }}
+                onClick={() => { setSelectedId(b.id); setOpenChapter(null); setEditingMeta(false); }}
+              >
+                <div>
+                  <div className="rc-spine-title">{b.title}</div>
+                  {b.series && <div className="rc-spine-meta">{b.series}{b.seriesOrder ? ` · Bk ${b.seriesOrder}` : ''}</div>}
+                  {!b.series && <div className="rc-spine-meta">{b.author}</div>}
+                </div>
+                <div className="rc-spine-meta">{total} {total === 1 ? 'unit' : 'units'}</div>
+              </button>
+            </div>
+          );
+        })}
+
+        <div className="rc-sync-status">{saving ? 'Saving to GitHub…' : 'Synced'}</div>
+      </div>
+
+      <div className="rc-main">
+        {!selectedId && (
+          <div className="rc-nowhere">
+            <BookOpen size={40} strokeWidth={1.3} />
+            <div className="rc-nowhere-title">Pick a book from the shelf</div>
+            <div className="rc-nowhere-sub">Or add one — set the chapter count once, then jot notes and a review as you make your way through it.</div>
+            <button className="rc-primary-btn" onClick={() => setShowAdd(true)}><Plus size={14} /> Add a book</button>
+          </div>
+        )}
+
+        {selectedId && currentBook && (
+          <BookDetail
+            book={currentBook}
+            editingMeta={editingMeta}
+            setEditingMeta={setEditingMeta}
+            updateMeta={updateMeta}
+            openChapter={openChapter}
+            setOpenChapter={setOpenChapter}
+            toggleRead={toggleRead}
+            saveNotes={saveNotes}
+            addChapter={addChapter}
+            removeChapter={removeChapter}
+            deleteBook={deleteBook}
+            importHighlights={importHighlights}
+            saveFlash={saveFlash}
+          />
+        )}
+      </div>
+
+      {showAdd && <AddBookModal onClose={() => setShowAdd(false)} onSubmit={addBook} />}
+    </div>
+  );
+}
+
+function BookDetail({ book, editingMeta, setEditingMeta, updateMeta, openChapter, setOpenChapter, toggleRead, saveNotes, addChapter, removeChapter, deleteBook, importHighlights, saveFlash }) {
+  const { meta, chapters } = book;
+  const keys = orderedKeys(meta);
+  const total = totalUnits(meta);
+  const readCount = keys.filter((k) => chapters[k]?.read).length;
+  const pct = total ? Math.round((readCount / total) * 100) : 0;
+  const [showImport, setShowImport] = useState(false);
+  const [showExport, setShowExport] = useState(false);
+
+  if (editingMeta) return <MetaEditForm meta={meta} onCancel={() => setEditingMeta(false)} onSave={(patch) => { updateMeta(patch); setEditingMeta(false); }} />;
+
+  return (
+    <div>
+      <div className="rc-book-header">
+        <div className="rc-eyebrow">{meta.series ? `${meta.series}${meta.seriesOrder ? ' · Book ' + meta.seriesOrder : ''}` : 'Standalone'}</div>
+        <h1 className="rc-book-title">{meta.title}</h1>
+        <div className="rc-book-author">{meta.author}</div>
+
+        <div className="rc-progress-wrap">
+          <div className="rc-progress-track"><div className="rc-progress-fill" style={{ width: pct + '%' }} /></div>
+          <div className="rc-progress-label">{readCount} / {total} read</div>
+        </div>
+
+        <div className="rc-book-actions">
+          <button className="rc-icon-btn" onClick={() => setEditingMeta(true)}><Pencil size={12} /> Edit details</button>
+          <button className="rc-icon-btn" onClick={() => setShowImport(true)}><BookOpen size={12} /> Import Kindle highlights</button>
+          <div className="rc-export-wrap">
+            <button className="rc-icon-btn" onClick={() => setShowExport((s) => !s)}><Feather size={12} /> Export</button>
+            {showExport && (
+              <div className="rc-export-menu" onMouseLeave={() => setShowExport(false)}>
+                <button onClick={() => { downloadTextFile(`${slugify(meta.title)}.md`, buildMarkdown(book), 'text/markdown'); setShowExport(false); }}>Plain Markdown (.md)</button>
+                <button onClick={() => { downloadTextFile(`${slugify(meta.title)}.html`, buildFormattedHTML(book), 'text/html'); setShowExport(false); }}>Formatted document (.html)</button>
+              </div>
+            )}
+          </div>
+          <button className="rc-icon-btn danger" onClick={() => { if (confirm(`Remove "${meta.title}" and all its notes? This can't be undone.`)) deleteBook(); }}><Trash2 size={12} /> Remove book</button>
+        </div>
+      </div>
+
+      {showImport && <ImportClippingsModal book={book} onClose={() => setShowImport(false)} onImport={(assignments) => { importHighlights(assignments); setShowImport(false); }} />}
+
+      {keys.map((key) => {
+        const ch = chapters[key] || { read: false, notes: '' };
+        const isOpen = openChapter === key;
+        const isLastNumeric = key === String(meta.chapterCount) && !isNaN(Number(key));
+        return (
+          <div className="rc-toc-row" key={key}>
+            <div className="rc-toc-head">
+              <span className="rc-toc-no rc-mono">{catalogNo(key)}</span>
+              <button className={'rc-check' + (ch.read ? ' checked' : '')} title={ch.read ? 'Mark as unread' : 'Mark as read'} onClick={() => toggleRead(key)}>
+                {ch.read ? <Check size={13} /> : null}
+              </button>
+              <div style={{ flex: 1 }} onClick={() => setOpenChapter(isOpen ? null : key)}>
+                <div className="rc-toc-label">{labelFor(key)}</div>
+                {!isOpen && <div className="rc-toc-preview">{ch.notes ? ch.notes.slice(0, 90) + (ch.notes.length > 90 ? '…' : '') : 'No notes yet'}</div>}
+              </div>
+              <span className="rc-chevron" onClick={() => setOpenChapter(isOpen ? null : key)}>
+                {isOpen ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+              </span>
+            </div>
+            {isOpen && (
+              <div className="rc-toc-body">
+                <textarea
+                  className="rc-textarea"
+                  defaultValue={ch.notes}
+                  placeholder="What happened, what stood out, how you felt about it…"
+                  onBlur={(e) => { if (e.target.value !== ch.notes) saveNotes(key, e.target.value); }}
+                />
+                <div className="rc-toc-footer">
+                  <span className={'rc-save-hint' + (saveFlash ? ' flash' : '')}>Saves to GitHub when you click away</span>
+                  {isLastNumeric && meta.chapterCount > 1 && (
+                    <button className="rc-remove-chapter" onClick={() => { if (confirm(`Remove ${labelFor(key)} and its notes?`)) removeChapter(key); }}>
+                      <Trash2 size={11} /> Remove this chapter
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <button className="rc-add-chapter-btn" onClick={addChapter}><Plus size={13} /> Add another chapter</button>
+    </div>
+  );
+}
+
+function MetaEditForm({ meta, onCancel, onSave }) {
+  const [title, setTitle] = useState(meta.title);
+  const [author, setAuthor] = useState(meta.author);
+  const [series, setSeries] = useState(meta.series || '');
+  const [seriesOrder, setSeriesOrder] = useState(meta.seriesOrder || '');
+
+  return (
+    <div className="rc-book-header">
+      <div className="rc-field"><label>Title</label><input type="text" value={title} onChange={(e) => setTitle(e.target.value)} /></div>
+      <div className="rc-field"><label>Author</label><input type="text" value={author} onChange={(e) => setAuthor(e.target.value)} /></div>
+      <div className="rc-row2">
+        <div className="rc-field"><label>Series</label><input type="text" value={series} onChange={(e) => setSeries(e.target.value)} placeholder="Leave blank if standalone" /></div>
+        <div className="rc-field"><label>Book #</label><input type="number" value={seriesOrder} onChange={(e) => setSeriesOrder(e.target.value)} disabled={!series} /></div>
+      </div>
+      <div className="rc-modal-actions">
+        <button className="rc-ghost-btn" onClick={onCancel}>Cancel</button>
+        <button className="rc-primary-btn" onClick={() => onSave({ title: title.trim() || meta.title, author: author.trim(), series: series.trim(), seriesOrder: series.trim() ? Number(seriesOrder) || null : null })}>Save details</button>
+      </div>
+    </div>
+  );
+}
+
+function AddBookModal({ onClose, onSubmit }) {
+  const [title, setTitle] = useState('');
+  const [author, setAuthor] = useState('');
+  const [series, setSeries] = useState('');
+  const [seriesOrder, setSeriesOrder] = useState('');
+  const [chapterCount, setChapterCount] = useState('');
+  const [hasPrologue, setHasPrologue] = useState(false);
+  const [hasEpilogue, setHasEpilogue] = useState(false);
+  const titleRef = useRef(null);
+
+  useEffect(() => { titleRef.current?.focus(); }, []);
+
+  const canSubmit = title.trim().length > 0 && Number(chapterCount) > 0;
+
+  return (
+    <div className="rc-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="rc-modal">
+        <div className="rc-modal-title">Add a book <button className="rc-ghost-btn" style={{ padding: '4px 8px' }} onClick={onClose}><X size={14} /></button></div>
+
+        <div className="rc-field"><label>Title</label><input ref={titleRef} type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="The Fifth Season" /></div>
+        <div className="rc-field"><label>Author</label><input type="text" value={author} onChange={(e) => setAuthor(e.target.value)} placeholder="N. K. Jemisin" /></div>
+
+        <div className="rc-row2">
+          <div className="rc-field"><label>Series (optional)</label><input type="text" value={series} onChange={(e) => setSeries(e.target.value)} placeholder="The Broken Earth" /></div>
+          <div className="rc-field"><label>Book #</label><input type="number" value={seriesOrder} onChange={(e) => setSeriesOrder(e.target.value)} disabled={!series} placeholder="1" /></div>
+        </div>
+
+        <div className="rc-field"><label>Number of chapters</label><input type="number" min="1" value={chapterCount} onChange={(e) => setChapterCount(e.target.value)} placeholder="24" /></div>
+
+        <div className="rc-checkrow"><input type="checkbox" checked={hasPrologue} onChange={(e) => setHasPrologue(e.target.checked)} /> Has a prologue</div>
+        <div className="rc-checkrow"><input type="checkbox" checked={hasEpilogue} onChange={(e) => setHasEpilogue(e.target.checked)} /> Has an epilogue</div>
+
+        <div className="rc-modal-actions">
+          <button className="rc-ghost-btn" onClick={onClose}>Cancel</button>
+          <button className="rc-primary-btn" disabled={!canSubmit} style={{ opacity: canSubmit ? 1 : 0.5 }} onClick={() => canSubmit && onSubmit({ title, author, series, seriesOrder, chapterCount, hasPrologue, hasEpilogue })}>
+            <Feather size={13} /> Add to shelf
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ImportClippingsModal({ book, onClose, onImport }) {
+  const { meta } = book;
+  const keys = orderedKeys(meta);
+  const [rawEntries, setRawEntries] = useState(null); // all entries parsed from file
+  const [titleChoices, setTitleChoices] = useState([]);
+  const [chosenTitle, setChosenTitle] = useState(null);
+  const [rows, setRows] = useState(null); // entries for the chosen title, with guessed/edited chapter + included flag
+  const [fileErr, setFileErr] = useState(null);
+  const fileInputRef = useRef(null);
+
+  const handleFile = async (file) => {
+    setFileErr(null);
+    try {
+      const text = await file.text();
+      const entries = parseClippingsFile(text);
+      if (!entries.length) {
+        setFileErr("Couldn't find any clippings in that file. Kindle's file is usually named \"My Clippings.txt\".");
+        return;
+      }
+      setRawEntries(entries);
+      const titles = [...new Set(entries.map((e) => e.title))];
+      // best-effort auto match to the current book's title
+      const normalizedBook = meta.title.toLowerCase();
+      const guess = titles.find((t) => t.toLowerCase().includes(normalizedBook) || normalizedBook.includes(t.toLowerCase()));
+      setTitleChoices(titles);
+      setChosenTitle(guess || titles[0]);
+    } catch {
+      setFileErr('Could not read that file.');
+    }
+  };
+
+  useEffect(() => {
+    if (!rawEntries || !chosenTitle) return;
+    const filtered = rawEntries.filter((e) => e.title === chosenTitle);
+    const withGuess = guessChapterForEntries(filtered, meta);
+    setRows(withGuess.map((e, i) => ({ ...e, id: i, key: e.guessedKey, included: e.type !== 'Bookmark' })));
+  }, [rawEntries, chosenTitle]);
+
+  const setRowKey = (id, key) => setRows((rs) => rs.map((r) => (r.id === id ? { ...r, key } : r)));
+  const toggleRow = (id) => setRows((rs) => rs.map((r) => (r.id === id ? { ...r, included: !r.included } : r)));
+
+  const doImport = () => {
+    const assignments = {};
+    keys.forEach((k) => { assignments[k] = []; });
+    rows.filter((r) => r.included).forEach((r) => {
+      if (!assignments[r.key]) assignments[r.key] = [];
+      assignments[r.key].push(formatImportedEntry(r));
+    });
+    onImport(assignments);
+  };
+
+  const includedCount = rows ? rows.filter((r) => r.included).length : 0;
+
+  return (
+    <div className="rc-overlay" onMouseDown={(e) => { if (e.target === e.currentTarget) onClose(); }}>
+      <div className="rc-modal rc-import-modal">
+        <div className="rc-modal-title">Import Kindle highlights <button className="rc-ghost-btn" style={{ padding: '4px 8px' }} onClick={onClose}><X size={14} /></button></div>
+
+        {!rawEntries && (
+          <>
+            <p className="rc-connect-copy" style={{ marginTop: 0 }}>
+              Upload your Kindle's <span className="rc-mono">My Clippings.txt</span> file (found in the Kindle's <span className="rc-mono">documents</span> folder when connected by USB).
+              Kindle doesn't record chapter names in this file, so highlights are matched to chapters by an estimate based on their location — you'll get to check and fix each one before anything is saved.
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".txt"
+              onChange={(e) => { if (e.target.files[0]) handleFile(e.target.files[0]); }}
+            />
+            {fileErr && <div className="rc-error-banner" style={{ marginTop: 14 }}><span>{fileErr}</span></div>}
+          </>
+        )}
+
+        {rawEntries && (
+          <>
+            {titleChoices.length > 1 && (
+              <div className="rc-field">
+                <label>Which title in the file is this book?</label>
+                <select value={chosenTitle} onChange={(e) => setChosenTitle(e.target.value)}>
+                  {titleChoices.map((t) => <option key={t} value={t}>{t}</option>)}
+                </select>
+              </div>
+            )}
+
+            {rows && (
+              <>
+                <div className="rc-import-list">
+                  {rows.map((r) => (
+                    <div className="rc-import-row" key={r.id}>
+                      <input type="checkbox" checked={r.included} onChange={() => toggleRow(r.id)} />
+                      <div className="rc-import-row-body">
+                        <div className="rc-import-row-meta">
+                          <span className="rc-mono">{r.type}{r.location != null ? ` · loc ${r.location}` : ''}</span>
+                        </div>
+                        {r.content && <div className="rc-import-row-text">{r.content}</div>}
+                      </div>
+                      <select value={r.key} onChange={(e) => setRowKey(r.id, e.target.value)}>
+                        {keys.map((k) => <option key={k} value={k}>{labelFor(k)}</option>)}
+                      </select>
+                    </div>
+                  ))}
+                </div>
+                <div className="rc-modal-actions">
+                  <button className="rc-ghost-btn" onClick={onClose}>Cancel</button>
+                  <button className="rc-primary-btn" disabled={includedCount === 0} style={{ opacity: includedCount === 0 ? 0.5 : 1 }} onClick={doImport}>
+                    Insert {includedCount} into notes
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ============================================================
+   STYLES (unchanged from the original component)
+   ============================================================ */
+const RC_STYLES = `
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Source+Serif+4:ital,wght@0,400;0,500;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+  .rc-root {
+    --bg: #f2efe5; --surface: #fdfcf8; --surface-2: #ece7d9; --border: #d9d3c1;
+    --ink: #292c26; --ink-dim: #7a7568; --gold: #a9822b; --rose: #94434c;
+    --parchment: #ffffff; --parchment-ink: #292c26;
+    font-family: 'Source Serif 4', Georgia, serif;
+    background: var(--bg); color: var(--ink); min-height: 720px;
+    display: flex; border-radius: 12px; overflow: hidden;
+    box-shadow: 0 1px 0 var(--border);
+  }
+  .rc-root * { box-sizing: border-box; }
+  .rc-root button { font-family: inherit; cursor: pointer; }
+  .rc-mono { font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.02em; }
+  .rc-display { font-family: 'Fraunces', 'Source Serif 4', serif; }
+
+  .rc-connect { align-items: center; justify-content: center; min-height: 480px; }
+  .rc-connect-card { max-width: 460px; padding: 40px; margin: 0 auto; }
+  .rc-connect-copy { font-size: 13.5px; line-height: 1.7; color: var(--ink-dim); margin: 10px 0 20px; }
+
+  .rc-shelf {
+    width: 280px; flex-shrink: 0; background: var(--surface);
+    border-right: 1px solid var(--border); padding: 20px 16px;
+    display: flex; flex-direction: column; gap: 14px;
+    max-height: 720px; overflow-y: auto;
+  }
+  .rc-shelf-header {
+    display: flex; align-items: baseline; justify-content: space-between;
+    padding: 0 2px 10px 2px; border-bottom: 1px solid var(--border);
+  }
+  .rc-shelf-title { font-size: 13px; text-transform: uppercase; letter-spacing: 0.14em; color: var(--ink-dim); }
+  .rc-add-btn {
+    background: transparent; border: 1px solid var(--gold); color: var(--gold);
+    border-radius: 6px; width: 26px; height: 26px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s, color 0.15s;
+  }
+  .rc-add-btn:hover { background: var(--gold); color: #fdfcf8; }
+
+  .rc-spine-row { display: flex; gap: 8px; align-items: stretch; }
+  .rc-spine {
+    flex: 1; background: var(--color, #4f6d5a); border-radius: 4px;
+    padding: 10px 8px; min-height: 64px;
+    display: flex; flex-direction: column; justify-content: space-between;
+    border: 1px solid rgba(0,0,0,0.25); text-align: left;
+    transition: transform 0.12s ease, box-shadow 0.12s ease;
+    color: #f3efe4; position: relative; overflow: hidden;
+  }
+  .rc-spine::after { content: ''; position: absolute; top: 0; bottom: 0; left: 6px; width: 1px; background: rgba(255,255,255,0.18); }
+  .rc-spine:hover { transform: translateX(3px); box-shadow: -3px 3px 0 rgba(0,0,0,0.2); }
+  .rc-spine.active { outline: 2px solid var(--gold); outline-offset: 1px; }
+  .rc-spine-title { font-family: 'Fraunces', serif; font-size: 14.5px; font-weight: 600; line-height: 1.2; }
+  .rc-spine-meta { font-family: 'IBM Plex Mono', monospace; font-size: 10px; opacity: 0.85; margin-top: 4px; }
+
+  .rc-sync-status { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-dim); text-align: center; padding-top: 4px; }
+
+  .rc-empty-shelf { color: var(--ink-dim); font-size: 13.5px; line-height: 1.6; padding: 20px 4px; }
+  .rc-empty-link { color: var(--gold); text-decoration: underline; background: none; border: none; padding: 0; font-size: 13.5px; font-family: inherit; }
+
+  .rc-main { flex: 1; padding: 32px 40px; overflow-y: auto; max-height: 720px; }
+
+  .rc-nowhere { height: 100%; min-height: 400px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: var(--ink-dim); gap: 14px; }
+  .rc-nowhere svg { color: var(--gold); opacity: 0.7; }
+  .rc-nowhere-title { font-family: 'Fraunces', serif; font-size: 22px; color: var(--ink); }
+  .rc-nowhere-sub { font-size: 14px; max-width: 320px; line-height: 1.6; }
+  .rc-primary-btn {
+    background: var(--gold); color: #fdfcf8; border: none; border-radius: 6px;
+    padding: 10px 18px; font-size: 13.5px; font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace; letter-spacing: 0.03em;
+    display: inline-flex; align-items: center; gap: 6px;
+  }
+
+  .rc-book-header { border-bottom: 1px solid var(--border); padding-bottom: 20px; margin-bottom: 24px; }
+  .rc-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.12em; color: var(--gold); text-transform: uppercase; margin-bottom: 8px; }
+  .rc-book-title { font-family: 'Fraunces', serif; font-size: 32px; font-weight: 600; line-height: 1.15; margin: 0 0 6px 0; }
+  .rc-book-author { font-size: 16px; color: var(--ink-dim); font-style: italic; }
+  .rc-book-actions { display: flex; gap: 10px; margin-top: 16px; }
+  .rc-icon-btn {
+    background: transparent; border: 1px solid var(--border); color: var(--ink-dim);
+    border-radius: 6px; padding: 6px 12px; font-size: 12.5px;
+    display: inline-flex; align-items: center; gap: 6px; font-family: 'IBM Plex Mono', monospace;
+  }
+  .rc-icon-btn:hover { color: var(--ink); border-color: var(--ink-dim); }
+  .rc-icon-btn.danger:hover { color: var(--rose); border-color: var(--rose); }
+
+  .rc-progress-wrap { display: flex; align-items: center; gap: 10px; margin-top: 16px; }
+  .rc-progress-track { flex: 1; height: 6px; background: var(--surface-2); border-radius: 3px; overflow: hidden; }
+  .rc-progress-fill { height: 100%; background: var(--gold); }
+  .rc-progress-label { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--ink-dim); white-space: nowrap; }
+
+  .rc-toc-row { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; background: var(--surface); overflow: hidden; }
+  .rc-toc-head { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+  .rc-toc-no { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: var(--gold); width: 52px; flex-shrink: 0; }
+  .rc-toc-label { font-family: 'Fraunces', serif; font-size: 16px; flex: 1; cursor: pointer; }
+  .rc-toc-label:hover { color: var(--gold); }
+  .rc-toc-preview { font-size: 12px; color: var(--ink-dim); font-style: italic; margin-top: 2px; }
+  .rc-check { width: 20px; height: 20px; border-radius: 4px; border: 1.5px solid var(--border); display: flex; align-items: center; justify-content: center; flex-shrink: 0; background: transparent; }
+  .rc-check.checked { background: var(--gold); border-color: var(--gold); color: #fdfcf8; }
+  .rc-chevron { color: var(--ink-dim); flex-shrink: 0; cursor: pointer; }
+  .rc-toc-body { padding: 0 14px 14px 66px; }
+  .rc-textarea {
+    width: 100%; min-height: 120px; background: var(--parchment); color: var(--parchment-ink);
+    border: 1px solid var(--border); border-radius: 6px; padding: 14px;
+    font-family: 'Source Serif 4', Georgia, serif; font-size: 14.5px; line-height: 1.6; resize: vertical;
+  }
+  .rc-textarea:focus { outline: 2px solid var(--gold); }
+  .rc-toc-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .rc-save-hint { font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: var(--ink-dim); }
+  .rc-save-hint.flash { color: var(--gold); }
+  .rc-remove-chapter { background: none; border: none; color: var(--ink-dim); font-size: 11px; font-family: 'IBM Plex Mono', monospace; display: inline-flex; align-items: center; gap: 4px; }
+  .rc-remove-chapter:hover { color: var(--rose); }
+
+  .rc-add-chapter-btn {
+    border: 1px dashed var(--border); background: transparent; color: var(--ink-dim);
+    border-radius: 8px; width: 100%; padding: 12px; font-family: 'IBM Plex Mono', monospace;
+    font-size: 12.5px; display: flex; align-items: center; justify-content: center; gap: 6px; margin-top: 4px;
+  }
+  .rc-add-chapter-btn:hover { color: var(--gold); border-color: var(--gold); }
+
+  .rc-overlay { position: fixed; inset: 0; background: rgba(10,12,16,0.7); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 20px; }
+  .rc-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 28px; width: 100%; max-width: 440px; max-height: 85vh; overflow-y: auto; }
+  .rc-modal-title { font-family: 'Fraunces', serif; font-size: 22px; margin: 0 0 18px 0; display: flex; justify-content: space-between; align-items: center; }
+  .rc-field { margin-bottom: 14px; }
+  .rc-field label { display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-dim); margin-bottom: 6px; }
+  .rc-field input[type=text], .rc-field input[type=number], .rc-field input[type=password] {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 9px 11px; color: var(--ink); font-size: 14px; font-family: 'Source Serif 4', serif;
+  }
+  .rc-field input:focus { outline: 1.5px solid var(--gold); border-color: var(--gold); }
+  .rc-row2 { display: flex; gap: 12px; }
+  .rc-row2 > div { flex: 1; }
+  .rc-checkrow { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; font-size: 13.5px; color: var(--ink); }
+  .rc-checkrow input { width: 16px; height: 16px; accent-color: var(--gold); }
+  .rc-modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+  .rc-ghost-btn { background: transparent; border: 1px solid var(--border); color: var(--ink-dim); border-radius: 6px; padding: 9px 16px; font-size: 13px; font-family: 'IBM Plex Mono', monospace; }
+
+  .rc-error-banner { background: rgba(179,85,95,0.15); border: 1px solid var(--rose); color: #6b2530; border-radius: 6px; padding: 8px 12px; font-size: 12.5px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+  .rc-error-banner button { background: none; border: none; color: inherit; }
+
+  .rc-export-wrap { position: relative; }
+  .rc-export-menu {
+    position: absolute; top: 100%; left: 0; margin-top: 6px; z-index: 20;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(0,0,0,0.12); padding: 6px; min-width: 210px;
+  }
+  .rc-export-menu button {
+    display: block; width: 100%; text-align: left; background: none; border: none;
+    padding: 8px 10px; border-radius: 6px; font-size: 12.5px; font-family: 'IBM Plex Mono', monospace; color: var(--ink);
+  }
+  .rc-export-menu button:hover { background: var(--surface-2); color: var(--gold); }
+
+  .rc-import-modal { max-width: 560px; }
+  .rc-import-list { max-height: 360px; overflow-y: auto; margin: 4px 0 16px; border: 1px solid var(--border); border-radius: 8px; }
+  .rc-import-row { display: flex; align-items: flex-start; gap: 10px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+  .rc-import-row:last-child { border-bottom: none; }
+  .rc-import-row input[type=checkbox] { margin-top: 4px; width: 15px; height: 15px; accent-color: var(--gold); flex-shrink: 0; }
+  .rc-import-row-body { flex: 1; min-width: 0; }
+  .rc-import-row-meta { font-size: 10.5px; color: var(--ink-dim); margin-bottom: 3px; }
+  .rc-import-row-text { font-size: 13px; line-height: 1.5; }
+  .rc-import-row select {
+    flex-shrink: 0; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 6px; padding: 5px 6px; color: var(--ink);
+  }
+  .rc-field select {
+    width: 100%; background: var(--surface-2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 9px 11px; color: var(--ink); font-size: 14px; font-family: 'Source Serif 4', serif;
+  }
+
+  @media (max-width: 760px) {
+    .rc-root { flex-direction: column; }
+    .rc-shelf { width: 100%; max-height: 220px; }
+    .rc-main { padding: 22px; max-height: none; }
+  }
+`;
+
+/* ============================================================
+   ROOT: connect gate + app
+   ============================================================ */
+function Root() {
+  const [token, setToken] = useState(() => localStorage.getItem(TOKEN_KEY));
+
+  const handleDisconnect = useCallback(() => {
+    localStorage.removeItem(TOKEN_KEY);
+    setToken(null);
+  }, []);
+
+  if (!token) return <ConnectScreen onConnected={setToken} />;
+  return <ReadingCompanion key={token} token={token} onDisconnect={handleDisconnect} />;
+}
+
+ReactDOM.createRoot(document.getElementById('app-mount')).render(<Root />);
+</script>
+</body>
+</html>
