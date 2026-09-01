@@ -6,7 +6,7 @@
 <title>The Maasverse — reading map</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600&family=Cinzel:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root{
     --paper:#f3ecdd;
@@ -328,6 +328,55 @@
     color:var(--ink-dim);
   }
 
+  .step-books{
+    position:relative;
+    display:block;
+    margin:16px 0 10px;
+    padding:2px 0 2px 24px;
+    border-left:1px dashed var(--hairline);
+  }
+  .step-books::before{
+    content:'';
+    position:absolute;
+    top:14px; left:-30px;
+    width:30px; height:1px;
+    background:var(--hairline);
+  }
+  .step-books .bk{
+    position:relative;
+    display:block;
+    padding:7px 0 7px 18px;
+    font-size:13px; font-weight:600; color:var(--ink);
+    font-family:'Fraunces',serif;
+  }
+  .step-books .bk::before{
+    content:'';
+    position:absolute;
+    left:-1px; top:16px;
+    width:15px; height:1px;
+    background:var(--hairline);
+  }
+  .step-books .bk::after{
+    content:'';
+    position:absolute;
+    left:-4.5px; top:12.5px;
+    width:7px; height:7px;
+    border-radius:50%;
+    background:var(--paper);
+    border:1.4px solid var(--gilt-soft);
+  }
+  .step-books .bk .yr{
+    font-family:'Inter',sans-serif; font-weight:400;
+    color:var(--ink-dim); font-size:11px; margin-left:4px;
+  }
+  .step-books .note{
+    font-family:'Inter',sans-serif; font-weight:400; font-style:italic;
+    color:var(--gilt); font-size:11.5px; margin-left:6px;
+  }
+  .step-books .sep{
+    display:none;
+  }
+
   .upcoming-section{
     padding:60px 0 8px;
     border-top:1px solid var(--hairline);
@@ -409,8 +458,8 @@
   }
   .archive-bar a:hover{ color:var(--arch-starlight); }
   .archive-bar .brand{
-    font-family:'Fraunces',serif; font-weight:500;
-    font-size:12.5px; letter-spacing:0.16em; text-transform:uppercase;
+    font-family:'Cinzel',serif; font-weight:600;
+    font-size:12px; letter-spacing:0.16em; text-transform:uppercase;
     color:var(--arch-starlight);
   }
   @media (max-width:600px){
@@ -499,7 +548,21 @@
     <h2 class="section-title">Reading path, for every payoff at full strength</h2>
     <p class="section-note">This is the order that lands both tandem moments — the Throne of Glass internal one and the cross-series one — agreed on across most fan reading-order guides. It isn't official; Maas and Bloomsbury haven't published one.</p>
     <ol class="path">
-      <li><strong>Throne of Glass → Queen of Shadows</strong><span>Straight through. Optional as a series overall, but this stretch sets up the tandem pair below.</span></li>
+      <li>
+        <strong>Throne of Glass → Queen of Shadows</strong>
+        <span>Straight through — five books before the tandem pair below. Optional as a series overall, but this stretch sets it up.</span>
+        <div class="step-books">
+          <span class="bk">Throne of Glass<span class="yr">2012</span></span>
+          <span class="sep">→</span>
+          <span class="bk">Crown of Midnight<span class="yr">2013</span></span>
+          <span class="sep">→</span>
+          <span class="bk">The Assassin's Blade<span class="yr">2014</span><span class="note">placement debated</span></span>
+          <span class="sep">→</span>
+          <span class="bk">Heir of Fire<span class="yr">2014</span></span>
+          <span class="sep">→</span>
+          <span class="bk">Queen of Shadows<span class="yr">2015</span></span>
+        </div>
+      </li>
       <li>
         <strong>Empire of Storms + Tower of Dawn, tandem</strong>
         <span>These two happen during the same stretch of time in different places — Aelin's war, and Chaol's recovery and politics abroad. Reading one straight through means sitting on the other's cliffhangers for an entire book, so the fan-standard fix is to interleave them at scene and arc breaks.</span>
@@ -517,7 +580,17 @@
         </details>
       </li>
       <li><strong>Kingdom of Ash</strong><span>The Throne of Glass finale.</span></li>
-      <li><strong>A Court of Thorns and Roses → A Court of Wings and Ruin</strong><span>The original ACOTAR trilogy — the minimum needed before the crossover means anything.</span></li>
+      <li>
+        <strong>A Court of Thorns and Roses → A Court of Wings and Ruin</strong>
+        <span>The original ACOTAR trilogy — three books, the minimum needed before the crossover means anything.</span>
+        <div class="step-books">
+          <span class="bk">A Court of Thorns and Roses<span class="yr">2015</span></span>
+          <span class="sep">→</span>
+          <span class="bk">A Court of Mist and Fury<span class="yr">2016</span></span>
+          <span class="sep">→</span>
+          <span class="bk">A Court of Wings and Ruin<span class="yr">2017</span></span>
+        </div>
+      </li>
       <li><strong>A Court of Frost and Starlight + A Court of Silver Flames</strong><span>Brings you current on Prythian before Crescent City catches up to it.</span></li>
       <li><strong>House of Earth and Blood</strong><span>Stands entirely on its own — no ACOTAR knowledge required yet.</span></li>
       <li><strong>House of Sky and Breath</strong><span>Ends by revealing that Midgard isn't the only world in play — the first tremor of the crossover.</span></li>
