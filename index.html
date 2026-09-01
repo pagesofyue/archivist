@@ -110,9 +110,9 @@
   }
   .admin-entry{
     margin-left:0.7rem;
-    color: rgba(250,248,253,0.14);
+    color: rgba(250,248,253,0.4);
     text-decoration:none;
-    font-size:1rem;
+    font-size:1.1rem;
     line-height:1;
     transition:color .2s;
   }
@@ -273,12 +273,14 @@
   .modal-body .author-tag{ color:var(--twilight); font-size:0.92rem; margin-bottom:1rem; }
   .modal-body .synopsis{ font-size:0.95rem; line-height:1.65; color:#443b63; margin-bottom:1.3rem; }
   .read-now-btn{
+    display:inline-flex;
     align-items:center; gap:0.4rem;
     background:var(--twilight); color:var(--parchment);
     border:none; border-radius:8px;
     font-family:'Jost', sans-serif; font-size:0.88rem; font-weight:500; letter-spacing:0.02em;
     padding:0.7rem 1.3rem; text-decoration:none;
     position:relative; z-index:1;
+    margin-bottom:1.4rem;
     transition:background .2s, color .2s, transform .2s;
   }
   .read-now-btn:hover{ background:var(--starlight); color:var(--night-deep); transform:translateY(-1px); }
@@ -439,8 +441,6 @@
   /* Admin-only card buttons: hidden unless body.is-admin */
   .card-actions{ display:none; }
   body.is-admin .card-actions{ display:block; }
-  body.is-admin .modal-read-now{ display:inline-flex; }
-  .modal-read-now{ display:none; }
 </style>
 </head>
 <body>
@@ -795,21 +795,41 @@ function renderFlatView(view){
   renderResults(view);
 }
 
+/* ---------- Crossover-map CTAs (shown when browsing a linked author) ---------- */
+const CROSSOVER_MAPS = {
+  'Sarah J. Maas': {
+    label: 'Maasverse',
+    blurb: 'Three series, one shared world, and a reading order where it actually matters. See how Throne of Glass, ACOTAR, and Crescent City connect.',
+    href: 'maasverse.html'
+  },
+  'Bella Matthews': {
+    label: 'Bellaverse',
+    blurb: 'Seven series and 31+ books share one world in Kroydon Hills — the Kingston, Sinclair, Beneventi, Ryan, and Murphy families keep intermarrying. See the family tree and reading order.',
+    href: 'bellaverse.html'
+  }
+};
+
+function crossoverCta(author){
+  const map = CROSSOVER_MAPS[author];
+  if(!map) return '';
+  return `
+    <div class="maasverse-cta">
+      <div class="txt">
+        <span class="eyebrow">Crossover Map</span>
+        <h3>Lost in the ${map.label}?</h3>
+        <p>${map.blurb}</p>
+      </div>
+      <a class="maasverse-btn" href="${map.href}">View the Reading Map →</a>
+    </div>`;
+}
+
 function renderResults(view){
   const resultsEl = document.getElementById('tab-'+view+'-results');
   if(!resultsEl) return;
   const pool = poolForView(view);
   const filtered = applyFilters(pool);
 
-  const maasverseCta = filters.author === 'Sarah J. Maas' ? `
-    <div class="maasverse-cta">
-      <div class="txt">
-        <span class="eyebrow">Crossover Map</span>
-        <h3>Lost in the Maasverse?</h3>
-        <p>Three series, one shared world, and a reading order where it actually matters. See how Throne of Glass, ACOTAR, and Crescent City connect.</p>
-      </div>
-      <a class="maasverse-btn" href="maasverse-map.html">View the Reading Map →</a>
-    </div>` : '';
+  const maasverseCta = crossoverCta(filters.author);
 
   if(!filtered.length){
     resultsEl.innerHTML = maasverseCta + '<div class="empty">No books match.</div>';
@@ -853,15 +873,7 @@ function onFilterChange(view, key, value){
 function renderAuthorPage(author){
   const panel = document.getElementById('tab-author');
   const books = BOOKS.filter(b=>b.author===author);
-  const maasverseCta = author === 'Sarah J. Maas' ? `
-    <div class="maasverse-cta">
-      <div class="txt">
-        <span class="eyebrow">Crossover Map</span>
-        <h3>Lost in the Maasverse?</h3>
-        <p>Three series, one shared world, and a reading order where it actually matters. See how Throne of Glass, ACOTAR, and Crescent City connect.</p>
-      </div>
-      <a class="maasverse-btn" href="maasverse-map.html">View the Reading Map →</a>
-    </div>` : '';
+  const maasverseCta = crossoverCta(author);
   panel.innerHTML = `<a href="#" class="back-link" onclick="showTab('home');return false;">← Back to all books</a>` +
     maasverseCta +
     renderAuthorSection(author, books);
@@ -916,10 +928,10 @@ function openModal(id){
   m.innerHTML = `
     <div class="modal-cover" style="${coverStyle(book, 'contain')}">
       ${book.coverURL ? '' : `<div class="title">${book.title}</div>`}
-      ${book.readNowURL ? `<a class="read-now-btn modal-read-now" href="${book.readNowURL}" target="_blank" rel="noopener">Read Now →</a>` : ''}
     </div>
     <div class="modal-body">
       <button class="modal-close" onclick="closeModal()">✕</button>
+      ${book.readNowURL ? `<a class="read-now-btn" href="${book.readNowURL}" target="_blank" rel="noopener">Read Now →</a>` : ''}
       <div class="series-tag">${book.series} · Book ${book.seriesOrder}</div>
       <h3>${book.title}</h3>
       <div class="author-tag">${book.author}</div>
