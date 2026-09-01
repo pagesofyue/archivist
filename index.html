@@ -262,6 +262,16 @@
   .modal-body h3{ margin:0 0 0.2rem; font-size:1.7rem; font-weight:600; }
   .modal-body .author-tag{ color:var(--twilight); font-size:0.92rem; margin-bottom:1rem; }
   .modal-body .synopsis{ font-size:0.95rem; line-height:1.65; color:#443b63; margin-bottom:1.3rem; }
+  .read-now-btn{
+    display:inline-flex; align-items:center; gap:0.4rem;
+    background:var(--twilight); color:var(--parchment);
+    border:none; border-radius:8px;
+    font-family:'Jost', sans-serif; font-size:0.88rem; font-weight:500; letter-spacing:0.02em;
+    padding:0.7rem 1.3rem; text-decoration:none;
+    margin-bottom:1.4rem;
+    transition:background .2s, color .2s, transform .2s;
+  }
+  .read-now-btn:hover{ background:var(--starlight); color:var(--night-deep); transform:translateY(-1px); }
   .meta-grid{
     display:grid; grid-template-columns:1fr 1fr; gap:0.7rem 1.2rem;
     font-size:0.85rem; margin-bottom:1.4rem;
@@ -574,6 +584,7 @@ async function loadBooks(){
       coverURL: row.CoverURL || '',
       downloadURL: row.DownloadURL || '',
       audiobookURL: row.AudiobookURL || '',
+      readNowURL: row['Read Now'] || '',
       read: row.Read === 'TRUE' || row.Read === 'true'
     }));
 }
@@ -696,8 +707,18 @@ function renderResults(view){
   const pool = poolForView(view);
   const filtered = applyFilters(pool);
 
+  const maasverseCta = filters.author === 'Sarah J. Maas' ? `
+    <div class="maasverse-cta">
+      <div class="txt">
+        <span class="eyebrow">Crossover Map</span>
+        <h3>Lost in the Maasverse?</h3>
+        <p>Three series, one shared world, and a reading order where it actually matters. See how Throne of Glass, ACOTAR, and Crescent City connect.</p>
+      </div>
+      <a class="maasverse-btn" href="maasverse-map.html">View the Reading Map →</a>
+    </div>` : '';
+
   if(!filtered.length){
-    resultsEl.innerHTML = '<div class="empty">No books match.</div>';
+    resultsEl.innerHTML = maasverseCta + '<div class="empty">No books match.</div>';
     return;
   }
 
@@ -706,7 +727,7 @@ function renderResults(view){
   const start = (currentPage[view]-1) * PAGE_SIZE;
   const pageBooks = filtered.slice(start, start+PAGE_SIZE);
 
-  resultsEl.innerHTML = `
+  resultsEl.innerHTML = maasverseCta + `
     <div class="book-grid">${pageBooks.map(renderBookCard).join('')}</div>
     ${renderPagination(view, currentPage[view], totalPages)}`;
   fitTitles();
@@ -808,6 +829,7 @@ function openModal(id){
       <h3>${book.title}</h3>
       <div class="author-tag">${book.author}</div>
       <div class="synopsis">${book.synopsis}</div>
+      ${book.readNowURL ? `<a class="read-now-btn" href="${book.readNowURL}" target="_blank" rel="noopener">Read Now →</a>` : ''}
       <div class="meta-grid">
         <div><span class="label">Genre</span><span>${book.genre || '—'}</span></div>
         <div><span class="label">Pages</span><span>${book.pages || '—'}</span></div>
