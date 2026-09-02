@@ -262,6 +262,7 @@
     background-color:var(--night);
   }
   .modal-cover::before{ content:''; position:absolute; inset:0; background:radial-gradient(circle at 30% 15%, rgba(255,255,255,0.2), transparent 55%); }
+  .modal-cover[onclick]{ cursor:pointer; }
   .modal-cover .title{ font-family:'Cormorant Garamond', serif; font-size:1.6rem; font-weight:600; position:relative; z-index:1; }
   .modal-body{ padding:1.8rem 2rem; position:relative; }
   .modal-close{
@@ -926,12 +927,12 @@ function openModal(id){
   const book = BOOKS.find(b=>b.id===id);
   const m = document.getElementById('modalContent');
   m.innerHTML = `
-    <div class="modal-cover" style="${coverStyle(book, 'contain')}">
+    <div class="modal-cover" style="${coverStyle(book, 'contain')}" ${book.readNowURL ? `onclick="window.open('${book.readNowURL}', '_blank', 'noopener')" role="link" tabindex="0" title="Read Now"` : ''}>
       ${book.coverURL ? '' : `<div class="title">${book.title}</div>`}
+      ${book.readNowURL ? `<a class="read-now-btn" href="${book.readNowURL}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Read Now →</a>` : ''}
     </div>
     <div class="modal-body">
       <button class="modal-close" onclick="closeModal()">✕</button>
-      ${book.readNowURL ? `<a class="read-now-btn" href="${book.readNowURL}" target="_blank" rel="noopener">Read Now →</a>` : ''}
       <div class="series-tag">${book.series} · Book ${book.seriesOrder}</div>
       <h3>${book.title}</h3>
       <div class="author-tag">${book.author}</div>
