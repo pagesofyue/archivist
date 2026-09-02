@@ -256,14 +256,22 @@
   }
   @media (max-width:640px){ .modal{ grid-template-columns:1fr; } }
   .modal-cover{
-    display:flex; flex-direction:column; align-items:flex-start; justify-content:flex-end;
-    gap:0.9rem; padding:1.4rem;
+    display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+    gap:1rem; padding:1.8rem 1.6rem;
     color:var(--parchment); position:relative; overflow:hidden;
     background-color:var(--night);
   }
   .modal-cover::before{ content:''; position:absolute; inset:0; background:radial-gradient(circle at 30% 15%, rgba(255,255,255,0.2), transparent 55%); }
   .modal-cover[onclick]{ cursor:pointer; }
-  .modal-cover .title{ font-family:'Cormorant Garamond', serif; font-size:1.6rem; font-weight:600; position:relative; z-index:1; }
+  .modal-cover-img{
+    width:100%; aspect-ratio:2/3; border-radius:8px;
+    background-repeat:no-repeat;
+    box-shadow:0 12px 26px rgba(0,0,0,0.35);
+    position:relative; z-index:1;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center;
+  }
+  .modal-cover-img .title{ font-family:'Cormorant Garamond', serif; font-size:1.4rem; font-weight:600; padding:0.8rem; }
   .modal-body{ padding:1.8rem 2rem; position:relative; }
   .modal-close{
     position:absolute; top:1rem; right:1.2rem;
@@ -281,7 +289,6 @@
     font-family:'Jost', sans-serif; font-size:0.88rem; font-weight:500; letter-spacing:0.02em;
     padding:0.7rem 1.3rem; text-decoration:none;
     position:relative; z-index:1;
-    margin-bottom:1.4rem;
     transition:background .2s, color .2s, transform .2s;
   }
   .read-now-btn:hover{ background:var(--starlight); color:var(--night-deep); transform:translateY(-1px); }
@@ -927,8 +934,10 @@ function openModal(id){
   const book = BOOKS.find(b=>b.id===id);
   const m = document.getElementById('modalContent');
   m.innerHTML = `
-    <div class="modal-cover" style="${coverStyle(book, 'contain')}" ${book.readNowURL ? `onclick="window.open('${book.readNowURL}', '_blank', 'noopener')" role="link" tabindex="0" title="Read Now"` : ''}>
-      ${book.coverURL ? '' : `<div class="title">${book.title}</div>`}
+    <div class="modal-cover" ${book.readNowURL ? `onclick="window.open('${book.readNowURL}', '_blank', 'noopener')" role="link" tabindex="0" title="Read Now"` : ''}>
+      <div class="modal-cover-img" style="${coverStyle(book, 'contain')}">
+        ${book.coverURL ? '' : `<div class="title">${book.title}</div>`}
+      </div>
       ${book.readNowURL ? `<a class="read-now-btn" href="${book.readNowURL}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Read Now →</a>` : ''}
     </div>
     <div class="modal-body">
