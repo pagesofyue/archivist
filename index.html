@@ -217,26 +217,22 @@
     white-space:nowrap; overflow:hidden;
     display:block; width:100%;
   }
-  .download-btn{
-    display:block; width:100%; margin-top:0.55rem;
-    background:var(--twilight); color:var(--parchment);
-    border:none; border-radius:6px;
-    font-family:'Jost', sans-serif; font-size:0.76rem; letter-spacing:0.03em;
-    padding:0.45rem 0.4rem; text-align:center;
+  .icon-btn{
+    flex:1; display:flex; align-items:center; justify-content:center;
+    height:30px;
+    border-radius:6px;
     text-decoration:none; cursor:pointer;
-    transition:background .2s;
+    transition:background .2s, color .2s, border-color .2s;
   }
-  .download-btn:hover{ background:var(--starlight); color:var(--night-deep); }
-  .audiobook-btn{
-    display:block; width:100%; margin-top:0.4rem;
-    background:transparent; color:var(--twilight);
-    border:1px solid var(--twilight); border-radius:6px;
-    font-family:'Jost', sans-serif; font-size:0.76rem; letter-spacing:0.03em;
-    padding:0.42rem 0.4rem; text-align:center;
-    text-decoration:none; cursor:pointer;
-    transition:background .2s, color .2s;
+  .icon-btn svg{ width:15px; height:15px; }
+  .icon-btn.download{
+    background:var(--twilight); color:var(--parchment); border:1px solid var(--twilight);
   }
-  .audiobook-btn:hover{ background:var(--twilight); color:var(--parchment); }
+  .icon-btn.download:hover{ background:var(--starlight); border-color:var(--starlight); color:var(--night-deep); }
+  .icon-btn.audiobook{
+    background:transparent; color:var(--twilight); border:1px solid var(--twilight);
+  }
+  .icon-btn.audiobook:hover{ background:var(--twilight); color:var(--parchment); }
 
   /* ---------- Modal ---------- */
   .modal-backdrop{
@@ -447,8 +443,8 @@
   .admin-cancel:hover{ color:var(--starlight); }
 
   /* Admin-only card buttons: hidden unless body.is-admin */
-  .card-actions{ display:none; }
-  body.is-admin .card-actions{ display:block; }
+  .card-actions{ display:none; gap:0.4rem; margin-top:0.55rem; }
+  body.is-admin .card-actions{ display:flex; }
 </style>
 </head>
 <body>
@@ -722,8 +718,12 @@ function coverStyle(book, fit){
 function renderBookCard(book){
   const actions = (book.downloadURL || book.audiobookURL) ? `
       <div class="card-actions" onclick="event.stopPropagation()">
-        ${book.downloadURL ? `<a class="download-btn" href="${book.downloadURL}" target="_blank" rel="noopener">Download</a>` : ''}
-        ${book.audiobookURL ? `<a class="audiobook-btn" href="${book.audiobookURL}" target="_blank" rel="noopener">Audiobook</a>` : ''}
+        ${book.downloadURL ? `<a class="icon-btn download" href="${book.downloadURL}" target="_blank" rel="noopener" title="Download ebook" aria-label="Download ebook">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 5.5c2-1 5-1.2 7 .3v13c-2-1.5-5-1.3-7-.3z"/><path d="M22 5.5c-2-1-5-1.2-7 .3v13c2-1.5 5-1.3 7-.3z"/></svg>
+        </a>` : ''}
+        ${book.audiobookURL ? `<a class="icon-btn audiobook" href="${book.audiobookURL}" target="_blank" rel="noopener" title="Listen to audiobook" aria-label="Listen to audiobook">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13a9 9 0 0 1 18 0"/><path d="M21 13v4a2 2 0 0 1-2 2h-1a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1h3z"/><path d="M3 13v4a2 2 0 0 0 2 2h1a1 1 0 0 0 1-1v-4a1 1 0 0 0-1-1H3z"/></svg>
+        </a>` : ''}
       </div>` : '';
   return `
     <div class="book-card ${book.read ? 'is-read':''}" onclick="openModal('${book.id}')">
